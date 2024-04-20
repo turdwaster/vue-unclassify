@@ -5,43 +5,49 @@ settings:
   excludeLinksFromLockfile: false
 
 dependencies:
+  acorn-es7:
+    specifier: ^0.1.0
+    version: 0.1.0
+  acorn-typescript:
+    specifier: ^1.4.13
+    version: 1.4.13(acorn@8.11.3)
   core-js:
-    specifier: ^3.8.3
+    specifier: ^3.37.0
     version: 3.37.0
   vue:
-    specifier: ^3.2.13
+    specifier: ^3.4.23
     version: 3.4.23(typescript@4.5.5)
 
 devDependencies:
   '@types/jest':
-    specifier: ^27.0.1
+    specifier: ^27.5.2
     version: 27.5.2
   '@vue/cli-plugin-babel':
-    specifier: ~5.0.0
+    specifier: ~5.0.8
     version: 5.0.8(@vue/cli-service@5.0.8)(core-js@3.37.0)(vue@3.4.23)
   '@vue/cli-plugin-typescript':
-    specifier: ~5.0.0
+    specifier: ~5.0.8
     version: 5.0.8(@vue/cli-service@5.0.8)(typescript@4.5.5)(vue@3.4.23)
   '@vue/cli-plugin-unit-jest':
-    specifier: ~5.0.0
+    specifier: ~5.0.8
     version: 5.0.8(@vue/cli-service@5.0.8)(@vue/vue3-jest@27.0.0)(jest@27.5.1)(ts-jest@27.1.5)
   '@vue/cli-service':
-    specifier: ~5.0.0
+    specifier: ~5.0.8
     version: 5.0.8(vue@3.4.23)
   '@vue/test-utils':
-    specifier: ^2.0.0-0
+    specifier: ^2.4.5
     version: 2.4.5
   '@vue/vue3-jest':
-    specifier: ^27.0.0-alpha.1
+    specifier: ^27.0.0
     version: 27.0.0(@babel/core@7.24.4)(babel-jest@27.5.1)(jest@27.5.1)(ts-jest@27.1.5)(typescript@4.5.5)(vue@3.4.23)
   babel-jest:
-    specifier: ^27.0.6
+    specifier: ^27.5.1
     version: 27.5.1(@babel/core@7.24.4)
   jest:
-    specifier: ^27.0.5
+    specifier: ^27.5.1
     version: 27.5.1
   ts-jest:
-    specifier: ^27.0.4
+    specifier: ^27.1.5
     version: 27.1.5(@babel/core@7.24.4)(@types/jest@27.5.2)(babel-jest@27.5.1)(jest@27.5.1)(typescript@4.5.5)
   typescript:
     specifier: ~4.5.5
@@ -2763,6 +2769,12 @@ packages:
       negotiator: 0.6.3
     dev: true
 
+  /acorn-es7@0.1.0:
+    resolution: {integrity: sha512-G2U4T7wow5IvBDsHP970KjxjfDyuCFLsNvNxlMzMNdb9XwJXQ+WxI71JlsjNyy8YGn0OJLBytlmxGkMBt6oWnQ==}
+    dependencies:
+      acorn: 2.7.0
+    dev: false
+
   /acorn-globals@6.0.0:
     resolution: {integrity: sha512-ZQl7LOWaF5ePqqcX4hLuv/bLXYQNfNWw2c0/yX/TsPRKamzHcTGQnlCjHT3TsmkOUVEPS3crCxiPfdzE/Trlhg==}
     dependencies:
@@ -2778,6 +2790,14 @@ packages:
       acorn: 8.11.3
     dev: true
 
+  /acorn-typescript@1.4.13(acorn@8.11.3):
+    resolution: {integrity: sha512-xsc9Xv0xlVfwp2o7sQ+GCQ1PgbkdcpWdTzrwXxO3xDMTAywVS3oXVOcOHuRjAPkS4P9b+yc/qNF15460v+jp4Q==}
+    peerDependencies:
+      acorn: '>=8.9.0'
+    dependencies:
+      acorn: 8.11.3
+    dev: false
+
   /acorn-walk@7.2.0:
     resolution: {integrity: sha512-OPdCF6GsMIP+Az+aWfAAOEt2/+iVDKE7oy6lJ098aoe59oAmK76qV6Gw60SbZ8jHuG2wH058GF4pLFbYamYrVA==}
     engines: {node: '>=0.4.0'}
@@ -2787,6 +2807,12 @@ packages:
     resolution: {integrity: sha512-cjkyv4OtNCIeqhHrfS81QWXoCBPExR/J62oyEqepVw8WaQeSqpW2uhuLPh1m9eWhDuOo/jUXVTlifvesOWp/4A==}
     engines: {node: '>=0.4.0'}
     dev: true
+
+  /acorn@2.7.0:
+    resolution: {integrity: sha512-pXK8ez/pVjqFdAgBkF1YPVRacuLQ9EXBKaKWaeh58WNfMkCmZhOZzu+NtKSPD5PHmCCHheQ5cD29qM1K4QTxIg==}
+    engines: {node: '>=0.4.0'}
+    hasBin: true
+    dev: false
 
   /acorn@7.4.1:
     resolution: {integrity: sha512-nQyp0o1/mNdbTO1PO6kHkwSrmgZ0MT/jCCpNiwbUjGoRN4dlBhqJtoQuCnEOKzgTVwg0ZWiCoQy6SxMebQVh8A==}
@@ -2798,7 +2824,6 @@ packages:
     resolution: {integrity: sha512-Y9rRfJG5jcKOE0CLisYbojUjIrIEE7AGMzA/Sm4BslANhbS+cDMpgBdcPT91oJ7OuJ9hYJBx59RjbhxVnrF8Xg==}
     engines: {node: '>=0.4.0'}
     hasBin: true
-    dev: true
 
   /address@1.2.2:
     resolution: {integrity: sha512-4B/qKCfeE/ODUaAUpSwfzazo5x29WD4r3vXiWsB7I2mSDAihwEqKO+g8GELZUQSSAo5e1XTYh3ZVfLyxBc12nA==}
