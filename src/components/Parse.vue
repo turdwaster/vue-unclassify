@@ -146,7 +146,7 @@ export default class ParamList extends Vue {
 	}
 
 	public get compact() {
-		return this.names != null;
+		return this.names != null && this.reactive != null;
 	}
 
 	private get groupMap() {
@@ -249,6 +249,22 @@ export default class ParamList extends Vue {
 		return getSource(node.value).replace(') {', ') => {');
 	}
 
+	function applyRecursively(node: acorn.Node, method: (node: acorn.Node) => void) {
+		if (typeof node?.type !== 'string')
+			return;
+
+		method(node);
+
+		for (const [prop, value] of Object.entries(node)) {
+			if (prop === 'type')
+				continue;
+			else if (Array.isArray(value))
+				(value as acorn.Node[]).forEach(el => applyRecursively(el, method));
+			else
+				applyRecursively(value as acorn.Node, method);
+		}
+	}
+
 	// Imports
 	ast.body.filter(x => x.type === 'ImportDeclaration')
 		.map(getSource)
@@ -273,21 +289,45 @@ export default class ParamList extends Vue {
 		}
 
 		const props = properties.filter(x => isDecoratedWith(x, 'Prop')).map(deconstructProperty);
+		const propIdentifiers: { [id: string] : acorn.Node } = {};
 		if (props?.length) {
 			emitLine('\n// Properties\nconst props = defineProps({');
-			for (const { id, typeStr, node } of props)
+			for (const { id, typeStr, node } of props) {
+				propIdentifiers[id] = node;
 				emitLine(`\t${id}${typeStr ? ': ' + typeStr : ''}${node.value != null ? ' = ' + getSource(node.value) : ''},`);
+			}
 			emitLine('});');
 		}
 
+		console.debug(JSON.stringify(propIdentifiers));
+
 		const refs = properties.filter(x => !x.static && !isDecorated(x) && x.value != null).map(deconstructProperty);
+		const refIdentifiers: { [id: string] : acorn.Node } = {};
 		if (refs?.length) {
 			emitLine('\n// State');
-			for (const { id, typeStr, node } of refs)
+			for (const { id, typeStr, node } of refs) {
+				refIdentifiers[id] = node;
 				emitLine(`const ${id} = ref<${typeStr}>(${getSource(node.value)});`);
+			}
 		}
 
 		const methods = memberNodes.filter(x => x.type === 'MethodDefinition') as acorn.MethodDefinition[];
+
+		// --------------------
+
+		function replaceThisExpr(code: string, member: string, prefix?: string, suffix?: string) {
+			const regex = new RegExp(`this\\.${member}([^a-zA-Z])`, 'g');
+			return code.replaceAll(regex, `${prefix ?? ''}${member}${suffix ?? ''}$1`)
+		}
+
+		function emitTranspiled(code: string) {
+			for (const prop of Object.keys(propIdentifiers))
+				code = replaceThisExpr(code, prop, 'props.');
+			for (const prop of Object.keys(refIdentifiers))
+				code = replaceThisExpr(code, prop, '', '.value');
+			emitLine(code);
+		}
+
 
 		const watches = methods.filter(x => isDecoratedWith(x, 'Watch')).map(deconstructProperty);
 		if (watches?.length) {
@@ -297,7 +337,7 @@ export default class ParamList extends Vue {
 				const decoArg = (deco.arguments[0] as acorn.Literal).value;
 				const decoArg1 = (deco.arguments?.length > 1 ? deco.arguments[1] : null) as acorn.Expression;
 				console.debug(deco.arguments);
-				emitLine(`const ${id} = watch(() => ${decoArg}.value, ${asLambda(node)}${decoArg1 ? (', ' + getSource(decoArg1)) : ''});`);
+				emitTranspiled(`const ${id} = watch(() => ${decoArg}.value, ${asLambda(node)}${decoArg1 ? (', ' + getSource(decoArg1)) : ''});`);
 			}
 		}
 
@@ -305,7 +345,7 @@ export default class ParamList extends Vue {
 		if (computeds?.length) {
 			emitLine('\n// Computeds');
 			for (const { id, node } of computeds)
-				emitLine(`const ${id} = computed(${asLambda(node)});`);
+				emitTranspiled(`const ${id} = computed(${asLambda(node)});`);
 		}
 
 		const plainMethods = methods.filter(x => !isDecorated(x) && x.kind == 'method').map(deconstructProperty)
@@ -316,21 +356,47 @@ export default class ParamList extends Vue {
 			emitLine('\n// Init');
 			for (const { id, node } of specialFunctions) {
 				if (id == 'created')
-					emitLine(getSource(node.value.body).slice(2, -5) + ';\n');
+					emitTranspiled(getSource(node.value.body).slice(2, -5) + ';\n');
 				else if (id == 'mounted')
-					emitLine(`onMounted(${asLambda(node)});`);
+					emitTranspiled(`onMounted(${asLambda(node)});`);
 			}
 		}
 
 		const functions = plainMethods.filter(({ id }) => !specialMethods.includes(id));
 		if (functions?.length) {
 			emitLine('\n// Functions');
-			for (const { id, node } of functions)
-				emitLine(`function ${id}${getSource(node.value)}`);
+			for (const { id, node } of functions) {
+				emitTranspiled(`function ${id}${getSource(node.value)}`);
+
+				// Replace 'this.[prop]', 'props.[prop]', 'this.', ''
+			}
 		}
 
 		//const statics = memberNodes.filter(x => x.type === 'StaticBlock');
-		console.debug(classNode);
+		// applyRecursively(classNode, node => {
+		// 	if (node.type !== 'MemberExpression')
+		// 		return;
+			
+		// 	// Find root object reference (i.e. this.a.b.c -> this)
+		// 	let me = node as acorn.MemberExpression;
+		// 	let thisParent = node;
+		// 	while (me.object.type === 'MemberExpression') {
+		// 		thisParent = me.object;
+		// 		me = me.object as acorn.MemberExpression;
+		// 	}
+
+		// 	if (me.object?.type !== 'ThisExpression') {
+		// 		console.debug('skip ' + getSource(node) + ': ' + me.object.type);
+		// 		return;
+		// 	}
+
+		// 	console.debug('     ' + getSource(node));
+
+		// 	const memberName = me.property.type === 'PrivateIdentifier' ? me.property.name : (me.property as acorn.Expression)
+		// 	console.debug('-->  ' + getSource(me.property));
+		// 	//console.debug(JSON.stringify(node));
+		// 	console.debug('');
+		// });
 
 		// for (const member of memberNodes) {
 		//     const memberCode = code.substring(member.start, member.end);
