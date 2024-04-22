@@ -1,7 +1,7 @@
 import * as acorn from 'acorn';
 import { isDecorated, isDecoratedWith, parseTS } from './astTools';
 
-const removeExports = ['vue-property-decorator'];
+const removeExports = ['vue-property-decorator', 'vue-facing-decorator', ' Vue ', ' Vue, '];
 
 export function splitSFC(text: string) {
     const scriptNode = extractTag(text, 'script');
@@ -49,10 +49,10 @@ export function transpile(codeText: string) {
     }
 
     // Imports
+    emitLine('import { ref, computed, watch } from \'vue\'');
     code.ast.body.filter(x => x.type === 'ImportDeclaration')
         .map(code.getSource)
         .filter(x => !removeExports.some(r => x!.includes(r)))
-        .map(x => x!.includes('import Vue from') ? 'import { computed, ref, watch } from \'vue\';' : x)
         .map(emitLine);
 
     const expDefNode = code.ast.body.find(x => x.type === 'ExportDefaultDeclaration') as acorn.ExportDefaultDeclaration;
@@ -102,7 +102,7 @@ export function transpile(codeText: string) {
         emitLine('\n// State');
         for (const { id, typeStr, node } of refs) {
             refIdentifiers[id] = node;
-            emitLine(`const ${id} = ref<${typeStr}>(${code.getSource(node.value)});`);
+            emitLine(`const ${id} = ref${typeStr ? (`<${typeStr}>`) : ''}(${code.getSource(node.value)});`);
         }
     }
 
@@ -112,6 +112,8 @@ export function transpile(codeText: string) {
         const regex = new RegExp(`this\\.${member}([^a-zA-Z0-9])`, 'g');
         return code.replace(regex, `${prefix ?? ''}${member}${suffix ?? ''}$1`)
     }
+
+    const computedIdentifiers: { [id: string]: acorn.Node } = {};
 
     function transpiledText(node: acorn.MethodDefinition | acorn.PropertyDefinition | acorn.Expression) {
         let bodyText: string;
@@ -128,6 +130,10 @@ export function transpile(codeText: string) {
         for (const prop of Object.keys(refIdentifiers))
             bodyText = replaceThisExpr(bodyText, prop, '', '.value');
 
+        // this.[computed] -> [computed].value
+        for (const prop of Object.keys(computedIdentifiers))
+            bodyText = replaceThisExpr(bodyText, prop, '', '.value');
+        
         // this.[other member] -> [other member]
         bodyText = bodyText.replace(/([^a-zA-Z0-9])this\./g, '$1');
 
@@ -144,7 +150,7 @@ export function transpile(codeText: string) {
             const deco = (node as any).decorators[0].expression as acorn.CallExpression;
             const decoArg = (deco.arguments[0] as acorn.Literal).value;
             const decoArg1 = (deco.arguments?.length > 1 ? deco.arguments[1] : null) as acorn.Expression;
-            emitLine(`const ${id} = watch(() => ${decoArg}.value, ${transpiledText(node)}${decoArg1 ? (', ' + code.getSource(decoArg1)) : ''});`);
+            emitLine(`watch(() => ${decoArg}.value, ${transpiledText(node)}${decoArg1 ? (', ' + code.getSource(decoArg1)) : ''});`);
         }
     }
 
@@ -152,8 +158,10 @@ export function transpile(codeText: string) {
     const computeds = methods.filter(x => !isDecorated(x) && x.kind == 'get').map(code.deconstructProperty);
     if (computeds?.length) {
         emitLine('\n// Computeds');
-        for (const { id, node } of computeds)
+        for (const { id, node } of computeds) {
+            computedIdentifiers[id] = node;
             emitLine(`const ${id} = computed(${transpiledText(node)});`);
+        }
     }
 
     const plainMethods = methods.filter(x => !isDecorated(x) && x.kind == 'method').map(code.deconstructProperty)
@@ -167,7 +175,7 @@ export function transpile(codeText: string) {
             if (id == 'created')
                 emitLine(unIndent(transpiledText((node.value! as any).body)).slice(2, -3) + ';\n');
             else if (id == 'mounted')
-                emitLine(`onMounted(${transpiledText(node)});`);
+                emitLine(`onMounted(${transpiledText(node)});\n`);
         }
     }
 
@@ -176,7 +184,7 @@ export function transpile(codeText: string) {
     if (functions?.length) {
         emitLine('\n// Functions');
         for (const { id, node } of functions)
-            emitLine(`function ${id}${transpiledText(node.value!)}`);
+            emitLine(`function ${id}${transpiledText(node.value!)}\n`);
     }
 
     // Regular functions
@@ -184,7 +192,7 @@ export function transpile(codeText: string) {
     if (staticFunctions?.length) {
         emitLine('\n// Static functions');
         for (const { id, node } of staticFunctions)
-            emitLine(`function ${id}${transpiledText(node.value!)}`);
+            emitLine(`function ${id}${transpiledText(node.value!)}\n`);
     }
 
     return xformed;
