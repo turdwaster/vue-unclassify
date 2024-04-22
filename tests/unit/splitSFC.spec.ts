@@ -1,16 +1,13 @@
 import { splitSFC } from '@/transpiler';
 import { toMatchFile } from 'jest-file-snapshot';
-import { getVueFile } from './getVueFile';
+import { readVueFile, vueFiles, vueFilesWithoutStyle } from './testUtils';
  
 expect.extend({ toMatchFile });
-
-const vueFiles = ['Simple.vue', 'TextField.vue', 'SelectField.vue', 'UnitNumeric.vue'];
-const vueFilesWithoutStyle = ['SelectField.vue'];
 
 describe('splitSFC', () => {
   vueFiles.forEach(name => 
     it(`can split ${name} into parts`, () => {
-      const src = getVueFile(name);
+      const src = readVueFile(name);
       const parts = splitSFC(src);
       expect(typeof(parts.scriptNode)).toBe('string');
       expect(typeof(parts.templateNode)).toBe('string');
@@ -22,7 +19,7 @@ describe('splitSFC', () => {
 describe('splitSFC-style', () => {
   vueFiles.filter(x => !vueFilesWithoutStyle.includes(x)).forEach(name => 
     it(name, () => {
-      const { styleNode } = splitSFC(getVueFile(name));
+      const { styleNode } = splitSFC(readVueFile(name));
       expect(styleNode).toMatchFile();
     })
   );
@@ -31,8 +28,8 @@ describe('splitSFC-style', () => {
 describe('splitSFC-template', () => {
   vueFiles.forEach(name => 
     it(name, () => {
-      const src = getVueFile(name);
-      const { templateNode } = splitSFC(getVueFile(name));
+      const src = readVueFile(name);
+      const { templateNode } = splitSFC(readVueFile(name));
       expect(templateNode).toMatchFile();
     })
   );
@@ -41,8 +38,8 @@ describe('splitSFC-template', () => {
 describe('splitSFC-scriptBody', () => {
   vueFiles.forEach(name => 
     it(name, () => {
-      const src = getVueFile(name);
-      const { scriptBody } = splitSFC(getVueFile(name));
+      const src = readVueFile(name);
+      const { scriptBody } = splitSFC(readVueFile(name));
       expect(scriptBody).toMatchFile();
     })
   );

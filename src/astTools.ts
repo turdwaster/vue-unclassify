@@ -1,5 +1,5 @@
 import * as acorn from 'acorn';
-import tsPlugin from 'acorn-typescript';
+import { tsPlugin } from 'acorn-typescript';
 
 export function parseTS(code: string) {
     const parser = acorn.Parser.extend(tsPlugin() as any);

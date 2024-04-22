@@ -29,7 +29,9 @@ function extractTag(data: string, tagName: string) {
 }
 
 export function transpile(codeText: string) {
-    codeText = codeText.replace(/@Component[\(\w$]/, ';$&');
+    // Fixup: interface before @Component -> syntax error
+    codeText = codeText.replace(/@Component[\(\s$]/, ';$&');
+
     const code = parseTS(codeText);
     let xformed = '';
 
