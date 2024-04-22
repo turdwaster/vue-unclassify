@@ -1,14 +1,8 @@
 import { splitSFC } from '@/transpiler';
 import { toMatchFile } from 'jest-file-snapshot';
-import fs from 'fs';
-import path from "path";
+import { getVueFile } from './getVueFile';
  
 expect.extend({ toMatchFile });
-
-function getVueFile(name: string) {
-  const absPath = path.join(__dirname, ".", "sfc", name);
-  return fs.readFileSync(absPath, 'utf8');
-}
 
 const vueFiles = ['Simple.vue', 'TextField.vue', 'SelectField.vue', 'UnitNumeric.vue'];
 const vueFilesWithoutStyle = ['SelectField.vue'];
