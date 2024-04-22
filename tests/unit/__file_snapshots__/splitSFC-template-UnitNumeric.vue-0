@@ -1,0 +1,79 @@
+<template>
+	<div>
+		<template v-if="!inline && inline !== ''" no-gutters>
+			<v-combobox outlined v-if="predefValues" :label="description" v-model="value" @change="valueChange" :error="!!errors" :disabled="readOnly" :readonly="readOnly" 
+				:error-messages="messages" :messages="infos" :class="errorClass" style="background-color: transparent !important;" :error-count="2" :suffix="unit" :prefix="prefix"
+				:items="predefValues" return-object item-text="text" item-value="text">
+				<template v-slot:append>
+					<v-menu style="top: -12px" offset-y>
+						<template v-slot:activator="{ on }">
+							<v-btn icon v-on="on" :disabled="!showToggleAssumed" tabindex="-1" class="always-enabled combo-icon">
+								<v-icon color="primary">more_horiz</v-icon>
+							</v-btn>
+						</template>
+						<v-list min-width="150" v-if="showToggleAssumed">
+							<v-list-item @click="toggleAssumed">
+								<v-list-item-content>
+									{{ isAssumed ? 'Mark as non-assumed' : 'Mark as assumed' }}
+								</v-list-item-content>
+							</v-list-item>
+						</v-list>
+					</v-menu>
+				</template>
+			</v-combobox>
+			<v-text-field outlined v-else :label="description" v-model="value" @change="valueChange" :error="!!errors" :disabled="readOnly" :readonly="readOnly"
+				:error-messages="messages" :messages="infos" style="background-color: transparent" :class="errorClass" :error-count="2" :suffix="unit" :prefix="prefix">
+
+				<!-- dropdown -->
+				<template v-slot:append>
+					<v-menu style="top: -12px" offset-y>
+						<template v-slot:activator="{ on }">
+							<v-btn icon v-on="on" :disabled="!showMenu" tabindex="-1" class="text-field-icon">
+								<v-icon color="primary">more_horiz</v-icon>
+							</v-btn>
+						</template>
+						<v-list min-width="150">
+							<template v-if="showMenu">
+								<v-list-item v-if="target && commentField" @click="pulseEvent('createComment')" :class="commentField ? 'comment-field' : ''">
+									<v-list-item-content class="comment-field">
+										<v-btn dark>
+											<span class="bw"><v-icon size="20px" class="ml-n2 mb-1">$comment</v-icon> Add comment</span>
+										</v-btn>
+									</v-list-item-content>
+								</v-list-item>
+								<v-list-item v-if="showToggleAssumed" @click="toggleAssumed">
+									<v-list-item-content>
+										{{ isAssumed ? 'Mark as non-assumed' : 'Mark as assumed' }}
+									</v-list-item-content>
+								</v-list-item>
+								<v-subheader v-if="usableUnits.length > 0">Unit</v-subheader>
+								<v-list-item v-for="unit of usableUnits" :key="unit.id" @click="unitChange(unit)">
+									<v-list-item-content>
+										<v-list-item-title v-text="unit.name"></v-list-item-title>
+									</v-list-item-content>
+									<v-list-item-action>
+										<v-icon v-if="unitValue.currentUnit.name === unit.name">$checkMark</v-icon>
+									</v-list-item-action>
+								</v-list-item>
+							</template>
+						</v-list>
+					</v-menu>
+					<CommentIcon v-if="target && commentField" :target="target" :field="commentField" :show="createComment" type="Comment" class="mt-n2 mr-n1"/>
+				</template>
+			</v-text-field>
+		</template>
+		<template v-if="(inline || inline === '') && (value || errors) || show">
+			<v-tooltip bottom :disabled="!errorClass" :color="errorClass" max-width="500" open-delay="500">
+				<template v-slot:activator="{ on }">
+					<div class="readonlyValue pb-2" v-on="on">
+						{{ description }}:
+						<transition name="change" mode="out-in">
+							<b :key="baseUnitValue" :class="errorClass">{{ prefix }}{{ value === null ? 'N/A' : value }}&nbsp;{{ unit }}</b>
+						</transition>
+					</div>
+				</template>
+				<span>{{ messages && messages.join('\n') }}</span>
+			</v-tooltip>
+		</template>
+	</div>
+</template>

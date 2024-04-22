@@ -3,8 +3,8 @@ import { isDecorated, isDecoratedWith, parseTS } from './astTools';
 
 const removeExports = ['vue-property-decorator'];
 
-export function splitSFC(data: string) {
-    const scriptNode = extractTag(data, 'script');
+export function splitSFC(text: string) {
+    const scriptNode = extractTag(text, 'script');
     let scriptBody = undefined;
     if (scriptNode) {
         const start = scriptNode.indexOf('>') + 1;
@@ -14,10 +14,10 @@ export function splitSFC(data: string) {
     }
 
     return {
-        templateNode: extractTag(data, 'template'),
+        templateNode: extractTag(text, 'template'),
         scriptNode,
         scriptBody,
-        styleNode: extractTag(data, 'style'),
+        styleNode: extractTag(text, 'style'),
     }
 }
 
@@ -29,6 +29,7 @@ function extractTag(data: string, tagName: string) {
 }
 
 export function transpile(codeText: string) {
+    codeText = codeText.replace(/@Component[\(\w$]/, ';$&');
     const code = parseTS(codeText);
     let xformed = '';
 

@@ -1,0 +1,33 @@
+<template>
+	<div>
+		<ul v-if="compact" v-bind:class="{ inline: inline != null && inline !== false }">
+			<li v-for="item of allParams" v-bind:key="'c' + item.key" :class="{ columns: columns != null && columns !== false }">
+				<template v-if="titlesOnly">{{ item.title }}</template>
+				<template v-else>
+					<span class="thin align"> {{ notitles ? '' : item.title + ':' }} 	</span> 
+					<DutyPointValue :param="params.getParam(item.key)" :sizingId="sizingId || params.sizingId" :fullWidth="inline != null && inline !== false"
+						:mode="mode" :assumed="item.assumed" />			
+				</template>
+			</li>
+		</ul>
+		<v-list v-else dense tile expand class="sharp-edges pt-0">
+			<v-list-group v-for="group of allParamsGrouped" :key="group.group" v-model="group.expanded" class="param-list">
+			  <template #appendIcon>
+			<v-icon>$plus</v-icon>
+		  </template>
+				<template v-slot:activator>
+					<v-list-item-content>
+						<v-list-item-title class="param-section" v-text="group.title" />
+					</v-list-item-content>
+				</template>
+				<v-list-item v-for="item of group.params" :key="'d' + item.key" class="pt-0">
+					<v-list-item-title v-text="item.title" v-if="!notitles"></v-list-item-title>
+					<v-list-item-action-text>
+						<DutyPointValue :param="params.getParam(item.key)" :sizingId="sizingId || params.sizingId"
+							:mode="mode" :assumed="item.assumed" />
+					</v-list-item-action-text>
+				</v-list-item>
+			</v-list-group>
+		</v-list>
+	</div>
+</template>

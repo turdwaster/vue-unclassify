@@ -1,0 +1,41 @@
+<style lang="scss" scoped>
+	@import '@/sass/main.scss';
+
+	.v-list-item:hover {
+		background-color: $selection-lighten-1;
+	}
+	.change-enter-active {
+		transition: background-color 5s;
+	}
+	.change-leave-active {
+		transition: background-color 0.25s;
+	}
+	.change-enter, .change-leave-to {
+		background-color: #ddf;
+	}
+	/* Remove default opaque background when warning/error/info classes are applied */
+	.warning.v-input, .error.v-input, .info.v-input {
+		background-color :transparent !important;
+	}
+	.comment-field {
+		color: $secondary;
+	}
+	.comment-field:hover {
+		background-color: $white !important;
+	}
+	.v-list-item--link.black {
+		background-color: $primary;
+	}
+	.combo-icon {
+		margin: -11px -5px 0 0px;
+		border-radius: 3px;
+	}
+	.text-field-icon {
+		margin: -2px -5px 0 0px;
+		border-radius: 3px;
+	}
+	/* Force the menu to appear enabled for the v-combobox since it triggers the preselect dropdown */
+	.theme--light.v-btn.v-btn--disabled.always-enabled .v-icon {
+		color: rgba(0, 0, 0, 0.54) !important;
+	}
+</style>

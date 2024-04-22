@@ -1,0 +1,211 @@
+
+import Vue from 'vue';
+import { Component, Prop, Watch } from 'vue-property-decorator';
+import { ParamValue } from '@/common/ParamValue';
+import { MessageSeverity, ValidationResult } from 'types/dto/CalcServiceDomain';
+import UnitValue from '@/common/UnitValue';
+import CommentIcon from '@/components/CommentIcon.vue';
+import SimpleWarnings from '@/components/SimpleWarnings.vue';
+import { tryToTranslate } from '@/i18n';
+import colors from '@/sass/_variables.scss';
+
+interface SelectValue {
+	text: string;
+	value: string;
+}
+
+@Component({
+	components: {
+		CommentIcon,
+		SimpleWarnings
+	}
+})
+export default class SelectField extends Vue {
+	@Prop() public param: ParamValue;
+	@Prop() public locked: boolean;
+	@Prop() public readwrite: boolean;
+	@Prop() public items: SelectValue[];
+	@Prop() public itemText: string;
+	@Prop() public itemKey: string;
+	@Prop() public onChange: (newValue: any) => void;
+	@Prop() public dropdown: boolean | string;
+	@Prop() public default: string;
+	@Prop() public target: string;
+
+	public values: SelectValue[] = [];
+	public selected: SelectValue = null;
+	public internalErrors: string[] = [];
+	public showCommentIcon: boolean = false;
+
+	public get description() {
+		const pdef = this.param?.definition;
+		if (pdef.Type === 'Object') {
+			const desc = tryToTranslate(pdef.Name + '.Description');
+			if (desc)
+				return desc;
+		}
+		const descr = pdef && (tryToTranslate(pdef.Name) || pdef.Description);
+		return [ descr || 'No title', this.unit && `(${this.unit})` ].join(' ').trim();
+	}
+
+	public get unit() {
+		const u = this.param?.definition?.Unit;
+		// Don't add stuff that looks like enum value as unit
+		if (!u || u === 'string' || u.length > 6)
+			return;
+		return u[0].toUpperCase() + u.slice(1);
+	}
+
+	public get readOnly() {
+		return !this.param || this.param.definition?.ReadOnly || this.locked;
+	}
+
+	public get msgs() {
+		const internals = (this.internalErrors || []).map(e => ({
+			Severity: MessageSeverity.Error,
+			Message: e,
+			ParamName: this.param.valueName
+		} as ValidationResult));
+		return (this.param?.allMessages || []).concat(internals);
+	}
+
+	public get messages() {
+		// Show warning if manual items are set but nothing is selectable
+		if (this.items !== undefined && (!this.items || !this.items.length))
+			return 'No options are available';
+	}
+
+	public get commentField(): string {
+		return this.param?.valueName;
+	}
+
+	public isSelected(v: SelectValue) {
+		return this.selected && this.key(v) === this.key(this.selected);
+	}
+
+	public color(v: SelectValue) {
+		if (!this.isSelected(v))
+			return;
+		if (this.param?.errors?.length)
+			return colors.error;
+		if (this.param?.warnings?.length)
+			return colors.warning;
+	}
+
+	public valueChange(v: SelectValue) {
+		const value = SelectField.value(v);
+		if (value)
+			this.internalErrors = [];
+		if (this.onChange)
+			this.onChange(value);
+		else
+			this.param.setValue(value);
+	}
+
+	public mounted() {
+		this.setValues(this.items || this.param?.definition?.Values || []);
+
+		// Value is only updated from backend if explicitly specified or if it is read-only,
+		// to avoid write -> update -> write infinite loops
+		const readWrite = this.readwrite || (this.readwrite as any as string) === '';
+		if (readWrite || this.param?.definition?.ReadOnly)
+			this.$watch('backingValue', (x: any) => {
+				if (x == null)
+					this.selected = null;
+				else {
+					const values = this.values || this.items || [];
+					// tslint:disable-next-line: triple-equals
+					const newSel = values.find(s => this.key(s) == x as any);
+					if (newSel)
+						this.selected = newSel;
+				}
+			});
+	}
+
+	private get backingValue() {
+		return this.param?.getValue();
+	}
+
+	@Watch('items')
+	private onItemsChanged(items: any) {
+		this.setValues(items);
+	}
+
+	private setValues(items: any) {
+		// Attempt to translate string lists since they are probably enums
+		if (items?.length && typeof(items[0]) === 'string')
+			this.values = items.map((x: string) => ({ text: this.text(x), value: x }));
+		else
+			this.values = items;
+
+		if (this.param) {
+			const initialValue = this.param.getValue() || this.default || null;
+			this.setValue(initialValue, true);
+		}
+	}
+
+	private setValue(initialValue: any, autoSelectSingleItem: boolean = false) {
+		let preselected: SelectValue;
+		const initialKey = this.key(initialValue);
+
+		if (initialKey != null) {
+			// Try to find a matching value
+			const values = this.values || this.items || [];
+			preselected = values.find(x => this.key(x) === initialKey) || null;
+		} else {
+			// Single value; just select it
+			if (autoSelectSingleItem && this.values?.length === 1) {
+				preselected = this.values[0];
+				const value = SelectField.value(preselected);
+				if (this.onChange)
+					this.onChange(value);
+				else
+					this.param.setValue(value);
+			}
+		}
+
+		if (preselected) {
+			// Found preselected item
+			this.selected = preselected;
+			this.internalErrors = [];
+		} else if (initialKey) {
+			// The supplied value was not in the list
+			const text = this.text(initialValue);
+			this.internalErrors = ['Unknown option ' + (text === initialKey ? `"${text}"` : `"${text}" (${initialKey})`)];
+		} else {
+			// Nothing selected
+			this.selected = null;
+			this.internalErrors = [];
+		}
+	}
+
+	private static value(sel: SelectValue | string): any {
+		if (!sel)
+			return null;
+		if (typeof(sel) === 'string')
+			 return sel;
+		if (sel.value)
+			return sel.value;
+		return sel;
+	}
+
+	public key(sel: any): string {
+		if (!sel)
+			return null;
+		if (this.itemKey)
+			return sel[this.itemKey];
+		return SelectField.value(sel).toString();
+	}
+
+	public text(sel: any): string {
+		if (!sel)
+			return null;
+
+		const text: string = this.itemText && sel[this.itemText] || sel.text || this.key(sel);
+		if (!text)
+			return null;
+
+		const def = this.param?.definition;
+		return UnitValue.readableString(text, def?.Unit);
+	}
+}

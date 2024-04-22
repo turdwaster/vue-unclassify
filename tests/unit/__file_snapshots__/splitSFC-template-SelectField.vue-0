@@ -1,0 +1,17 @@
+<template>
+	<div @mouseover="showCommentIcon = true" @mouseout="showCommentIcon = false">
+		<div v-if="dropdown !== ''" style="margin-bottom: 15px">
+			<label class="v-label" v-text="description" />
+			<v-chip-group column :mandatory="!!selected" v-model="selected" @change="valueChange">
+				<v-chip v-for="v of values" :key="key(v)" :value="v" :disabled="locked" :class="isSelected(v) && 'sel-choice-chip'"
+					:outlined="!isSelected(v)" :color="color(v)" v-keyboard-click>{{ text(v) }}<slot name="suffix" v-bind:value="v" /></v-chip>
+				<CommentIcon v-if="target && commentField" :target="target" :field="commentField" type="Comment" :visible="showCommentIcon" />
+			</v-chip-group>
+			<div v-if="messages" v-text="messages" class="grey--text" />
+			<SimpleWarnings :msgs="msgs" />
+		</div>
+		<v-select v-else :label="description" v-model="selected" :items="values" :disabled="readOnly" :item-text="text"
+			@change="valueChange" :error="!!msgs && !!msgs.length" :error-messages="msgs" :messages="messages" return-object outlined persistent-hint>
+		</v-select>
+	</div>
+</template>

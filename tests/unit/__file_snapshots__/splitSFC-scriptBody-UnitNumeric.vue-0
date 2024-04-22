@@ -1,0 +1,280 @@
+
+	import Vue from 'vue';
+	import { Component, Prop, Watch } from 'vue-property-decorator';
+	import { ParamValue } from '@/common/ParamValue';
+	import { SelectValue } from 'types/dto/CalcServiceDomain';
+	import UnitValue from '@/common/UnitValue';
+	import CommentIcon from '@/components/CommentIcon.vue';
+	import { tryToTranslate } from '@/i18n';
+
+	interface Unit {
+		id: string;
+		name: string;
+		factor: number;
+		offset?: number;
+		imperial?: boolean;
+		base: string;
+		group?: string;
+	}
+
+	@Component({
+		components: {
+			CommentIcon
+		}
+	})
+	export default class UnitNumeric extends Vue {
+		@Prop() public param: ParamValue;
+		@Prop() public locked: boolean;
+		@Prop() public readwrite: boolean;
+		@Prop() public show: boolean;
+		@Prop() public writable: boolean;
+		@Prop() public customDescription: string;
+		@Prop() public inline: string;
+		@Prop() public onChange: (newValue: any) => void;
+		@Prop() public target: string;
+		@Prop() public minValue: number;
+		@Prop() public maxValue: number;
+
+		public createComment: boolean = false;
+		public currentUnit: Unit = null;
+		private enteredUnit: Unit = undefined;
+		private enteredValue: string = undefined;
+
+		public unitValue: UnitValue = null;
+		public value: string | SelectValue | null = null;
+
+		get usableUnits() {
+			return this.unitValue?.usableUnits || [];
+		}
+
+		get description() {
+			if (this.customDescription)
+				return this.customDescription;
+			const pdef = this.param?.definition;
+			return pdef && (tryToTranslate(pdef.Name) || pdef.Description) || 'No title';
+		}
+
+		get prefix() {
+			return this.isAssumed ? '≈ ' : '';
+		}
+
+		get unit() {
+			return this.unitValue?.unitString;
+		}
+
+		get readOnly() {
+			return !this.param || (this.param.definition?.ReadOnly && !this.writable) ||
+				this.locked || (this.inline || this.inline === '') || false;
+		}
+
+		get messages() {
+			return (this.warnings || this.errors) && (this.warnings || []).concat(this.errors || []);
+		}
+
+		get useImperial() {
+			return this.param.useImperialUnits;
+		}
+
+		get baseUnitValue(): number {
+			return this.unitValue?.baseUnitValue;
+		}
+
+		get predefValues(): SelectValue[] {
+			const unit = this.currentUnit;
+			if (!unit || !this.param)
+				return null;
+
+			const def = this.param?.definition;
+			const values = (unit.imperial && def.ImperialValues || def.Values || []);
+			if (!values || !values.length)
+				return null;
+
+			return values.map(x => {
+				const value = new UnitValue(x.value, unit.id, def.Decimals, unit.imperial).valueString;
+				const text = x.text && x.text !== value ? `${UnitValue.readableString(x.text)} (${value})` : value;
+				return { text, value };
+			});
+		}
+
+		get errorClass() {
+			let classNames = this.isAssumed ? 'assumed ' : '';
+			if (this.errors?.length)
+				classNames += 'error';
+			else if (this.warnings?.length)
+				classNames += 'warning';
+			else if (this.param.infos?.length) {
+				// Not testing "full" this.infos since this would make "Using xx kg" blue
+				classNames += 'info';
+			}
+			return classNames;
+		}
+
+		get staticErrors(): string {
+			const def = this.param?.definition;
+			if (!def || def.ReadOnly)
+				return;
+
+			if (def.Type === 'Number') {
+				const rawVal = this.value as string;
+				if (rawVal != null && rawVal.length && isNaN(parseFloat(rawVal.replace(',', '.'))))
+					return 'Not a valid number';
+			}
+
+			const val = this.baseUnitValue;
+			if (val != null) {
+				const min = this.minValue ?? def.StaticMin;
+				if (min != null && val < min)
+					return 'Value is too small';
+				const max = this.maxValue ?? def.StaticMax;
+				if (max != null && val > max)
+					return 'Value is too large';
+			}
+		}
+
+		// Be sure to return undefined here instead of null, since v-text-field dies if @messages = null
+		get errors() {
+			if (this.staticErrors)
+				return [this.staticErrors];
+			const e = this.param?.errors;
+			return e?.length && e.map(x => x.Message) || undefined;
+		}
+
+		get warnings() {
+			const e = this.param?.warnings;
+			return e?.length && e.map(x => x.Message) || undefined;
+		}
+
+		get infos() {
+			if (!this.param)
+				return undefined;
+			let all: string[] = [];
+			const usedMessage = this.usedMessage(this.param.usedValue);
+			if (usedMessage)
+				all.push(usedMessage);
+			const infos = this.param.infos;
+			if (infos?.length)
+				all = all.concat(infos.map(x => x.Message));
+			return all?.length ? all : undefined;
+		}
+
+		get commentField(): string {
+			return this.param?.valueName;
+		}
+
+		get showMenu() {
+			return !!(this.usableUnits.length > 0 || this.target && this.commentField || this.showToggleAssumed);
+		}
+
+		get showToggleAssumed() {
+			return !this.readOnly && this.param?.canBeAssumed && (this.isAssumed || this.baseUnitValue != null);
+		}
+
+		public get isAssumed() {
+			return this.param?.isAssumed;
+		}
+
+		public toggleAssumed() {
+			this.param?.toggleAssumed();
+		}
+
+		private usedMessage(usedValue: string) {
+			if (usedValue == null)
+				return null;
+			const unitId = this.unitValue?.unit?.id;
+			if (!unitId)
+				return null;
+			const uv = new UnitValue(usedValue, unitId, this.param.definition.Decimals, this.useImperial);
+			return 'Using ' + uv.toString();
+		}
+
+		public mounted() {
+			if (!this.param)
+				return;
+
+			this.unitValue = this.param.getUnitValue(this.useImperial);
+			this.currentUnit = this.unitValue.unit;
+			this.loadValue(this.param.getValue());
+
+			// Value is only updated from backend if explicitly specified or if it is read-only,
+			// to avoid write -> update -> write infinite loops
+			const readWrite = this.readwrite || (this.readwrite as any as string) === '';
+			if (readWrite || this.param?.definition?.ReadOnly)
+				this.$watch('backingValue', (x: any) => this.loadValue(x));
+		}
+
+		private get backingValue() {
+			return this.param?.getValue();
+		}
+
+		private loadValue(value: any) {
+			this.unitValue.setBaseUnitValue(value);
+			this.value = this.selectedPreset(value) || this.unitValue.valueString;
+		}
+
+		private selectedPreset(value: string) {
+			if (value != null && this.predefValues?.length) {
+				const valueInCurrentUnit = this.unitValue?.valueString;
+				// Try to match a unique predefined value if present (weak equality to match numbers against predef:ed strings)
+				// tslint:disable-next-line: triple-equals
+				const predefs = valueInCurrentUnit && this.predefValues.filter(x => (x as any).value == valueInCurrentUnit);
+				if (predefs?.length === 1)
+					return predefs[0];
+			}
+		}
+
+		public unitChange(newUnit: Unit, baseUnitValue?: number) {
+			this.unitValue.changeUnit(newUnit);
+
+			const eu = this.enteredUnit;
+			const ev = this.enteredValue;
+			if (eu && ev && newUnit && eu.name === newUnit.name && ev !== this.value) {
+				// Restore previously entered value when switching back to unit used when entering it
+				this.value = this.enteredValue;
+				this.unitValue.set(this.enteredValue);
+			} else
+				this.value = this.unitValue.valueString;
+		}
+
+		public valueChange() {
+			let value = this.value as string;
+
+			if (this.value && (this.value as SelectValue).value) {
+				// A SelectValue was selected; set underlying value to current entries' value instead of its text
+				value = (this.value as SelectValue).value;
+
+				// Set current value to the _value_ instead of its text
+				// This is delayed since the v-combobox does not update properly when setting `this.value` if the current
+				// selected object has the same `item-value`. This is also the reason for both item-text and item-value
+				// being set to `text` since the component requires item-value to be unique and removes those with the
+				// same values otherwise.
+				if (this.value !== value)
+					this.$nextTick(() => this.value = this.selectedPreset(value) || value);
+			}
+			this.enteredValue = value;
+			this.enteredUnit = this.unitValue.unit;
+			if (this.unitValue.set(value)) {
+				if (!this.readOnly && !this.staticErrors) {
+					if (this.onChange)
+						this.onChange(this.unitValue.baseUnitValue);
+					else
+						this.param.setValue(this.unitValue.baseUnitValue);
+				}
+			}
+		}
+
+		public pulseEvent(name: string) {
+			(this as any)[name] = true;
+			this.$nextTick(() => (this as any)[name] = false);
+		}
+
+		@Watch('useImperial')
+		private onSOUChange(value: boolean) {
+			if (!this.unitValue)
+				return;
+			const newUnit = this.unitValue.changeSystemOfUnits(value);
+			if (newUnit) {
+				this.unitChange(newUnit);
+				this.currentUnit = newUnit;
+			}
+		}
+	}

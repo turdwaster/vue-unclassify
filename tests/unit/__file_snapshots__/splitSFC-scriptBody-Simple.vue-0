@@ -1,0 +1,78 @@
+
+import Vue from 'vue';
+import { Component, Prop } from 'vue-property-decorator';
+import { ParameterDef } from 'types/dto/CalcServiceDomain';
+import { ParamBag } from '@/common/ParamBag';
+import DutyPointValue from '@/components/DutyPointValue.vue';
+import { tryToTranslate } from '@/i18n';
+
+@Component({
+	components: {
+		DutyPointValue
+	}
+})
+export default class ParamList extends Vue {
+	@Prop() public sizingId: string;
+	@Prop() public params: ParamBag;
+	@Prop() public names: string[];
+	@Prop() public inline: boolean;
+	@Prop() public filter: 'All' | 'UserDefined' | 'Basic' | 'Problematic';
+
+	private static readonly killGroups = [ 'Pipe', 'Inlet.Pipes', 'Outlet.Pipes' ];
+
+	private static readonly redirectGroups: { [type: string]: string } = {
+		Frame: 'Build',
+		Flange: 'Build',
+		Drive: 'Build'
+	};
+
+	private static aggregatedParams: string[];
+
+	public reactive: ParamBag = null;
+	public nonReactive: boolean;
+
+	public created() {
+		if (!ParamList.aggregatedParams)
+			ParamList.aggregatedParams = ParamBag.aggregatedValueNames;
+	}
+
+	public mounted() {
+		if (!this.fixedPump)
+			this.showingAlternatives = true;
+
+		if (this.fixedPump)
+			this.expandPump(this.fixedPump);
+		else
+			this.searchPumps();
+	}
+
+	public get compact() {
+		return this.names != null && this.reactive != null;
+	}
+
+	private get groupMap() {
+		const map = {} as { [key: string]: ParameterDef };
+		ParamBag.groups.forEach(g => map[g.Name] = g);
+		return map;
+	}
+
+	private hasProblem(valueName: string) {
+		return this.params.hasProblem(valueName);
+	}
+
+	@Watch('reloadTrigger')
+	private onDataChange(val: string) {
+		if (val)
+			this.reload.trigger();
+	}
+
+	@Watch('deepStuff', { deep: true, immediate: true })
+	private onDeepChange(val: string) {
+		if (val)
+			this.reload.trigger();
+	}
+
+	private static staticUtilityMethod() {
+		console.debug('Niiice');
+	}
+}

@@ -3,18 +3,26 @@ import tsPlugin from 'acorn-typescript';
 
 export function parseTS(code: string) {
     const parser = acorn.Parser.extend(tsPlugin() as any);
-	const ast = parser.parse(code, {
-		ecmaVersion: 'latest',
-		sourceType: 'module',
-		locations: true // Required for acorn-typescript
-	});
 
-    return {
-        ast,
-        getSource: asSource.bind(null, code),
-        deconstructProperty: deconstructProperty.bind(null, code),
-        asLambda: asLambda.bind(null, code)
-    };
+    try {
+        const ast = parser.parse(code, {
+            ecmaVersion: 'latest',
+            sourceType: 'module',
+            locations: true // Required for acorn-typescript
+        });
+
+        return {
+            ast,
+            getSource: asSource.bind(null, code),
+            deconstructProperty: deconstructProperty.bind(null, code),
+            asLambda: asLambda.bind(null, code)
+        };        
+    } catch (ex: any) {
+        let msg = '// Transpilation failure - ' + (ex?.message ?? JSON.stringify(ex));
+        if (ex.loc?.line)
+            msg += '\n' + code?.split('\n').slice(ex.loc.line - 1, ex.loc.line);
+        throw new Error(msg);
+    }
 }
 
 function deconstructProperty(code: string, node: acorn.PropertyDefinition | acorn.MethodDefinition) {

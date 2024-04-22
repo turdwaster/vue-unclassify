@@ -1,0 +1,22 @@
+<style lang="scss" scoped>
+	@import '@/sass/_variables.scss';
+
+	.change-enter-active {
+		transition: background-color 5s;
+	}
+	.change-leave-active {
+		transition: background-color 0.25s;
+	}
+	.change-enter, .change-leave-to {
+		background-color: #ddf;
+	}
+
+	/* Hack warning color of text field when warning/error classes are applied */
+	.warning.v-input, .error.v-input {
+		background-color:transparent !important;
+	}
+	.warning.v-input, .warning.v-input .error--text * {
+		color: $warning !important;
+		caret-color: $warning !important;
+	}
+</style>

@@ -1,0 +1,23 @@
+<template>
+	<div>
+		<template v-if="readOnly && value">
+			<v-tooltip bottom :disabled="!errorClass" :color="errorClass" max-width="500" open-delay="500">
+				<template v-slot:activator="{ on }">
+					<div class="readonlyValue" v-on="on">
+						{{ description }}:
+						<transition name="change" mode="out-in">
+							<b :key="value" v-text="value" :class="errorClass" />
+						</transition>
+					</div>
+				</template>
+				<span>{{ messages && messages.join('\n') }}</span>
+			</v-tooltip>
+		</template>
+		<v-form v-if="!readOnly" v-model="valid" @submit.prevent>
+			<v-text-field outlined v-if="!textArea" v-model="value" :label="description" @change="valueChange" :error="!!errors"
+				:error-messages="messages" :class="errorClass" :error-count="2" :rules="fieldRules" maxlength="500" :hide-details="hideDetails" />
+			<v-textarea outlined v-if="textArea" v-model="value" :label="description" @change="valueChange" :error="!!errors"
+				:error-messages="messages" :class="errorClass" :error-count="2" :rules="fieldRules" maxlength="2000" :hide-details="hideDetails" />
+		</v-form>
+	</div>
+</template>
