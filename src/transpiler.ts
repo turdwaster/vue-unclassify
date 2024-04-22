@@ -3,6 +3,31 @@ import { isDecorated, isDecoratedWith, parseTS } from './astTools';
 
 const removeExports = ['vue-property-decorator'];
 
+export function splitSFC(data: string) {
+    const scriptNode = extractTag(data, 'script');
+    let scriptBody = undefined;
+    if (scriptNode) {
+        const start = scriptNode.indexOf('>') + 1;
+        const end = scriptNode.lastIndexOf('</');
+        if (start > 0 && end > start)
+            scriptBody = scriptNode.substring(start, end);
+    }
+
+    return {
+        templateNode: extractTag(data, 'template'),
+        scriptNode,
+        scriptBody,
+        styleNode: extractTag(data, 'style'),
+    }
+}
+
+function extractTag(data: string, tagName: string) {
+    const start = data.indexOf(`<${tagName}`);
+    const endTag = `</${tagName}>`;
+    const end = data.lastIndexOf(endTag);
+    return start >= 0 && end > start ? data.substring(start, end + endTag.length) : undefined;
+}
+
 export function transpile(codeText: string) {
     const code = parseTS(codeText);
     let xformed = '';
@@ -103,11 +128,7 @@ export function transpile(codeText: string) {
         // this.[other member] -> [other member]
         bodyText = bodyText.replace(/([^a-zA-Z0-9])this\./g, '$1');
 
-        // Unindent one step
-        const lines = bodyText.split('\n');
-        const indentRegex = new RegExp('^( {4}|\t)');
-        bodyText = lines.map(l => l.replace(indentRegex, '')).join('\n');
-        return bodyText;
+        return unIndent(bodyText);
     }
 
     const methods = memberNodes.filter(x => x.type === 'MethodDefinition') as acorn.MethodDefinition[];
@@ -140,21 +161,36 @@ export function transpile(codeText: string) {
     if (specialFunctions?.length) {
         emitLine('\n// Initialization');
         for (const { id, node } of specialFunctions) {
-            if (id == 'created') {
-                emitLine(transpiledText((node.value! as any).body).slice(2, -3) + ';\n');
-            }
+            if (id == 'created')
+                emitLine(unIndent(transpiledText((node.value! as any).body)).slice(2, -3) + ';\n');
             else if (id == 'mounted')
                 emitLine(`onMounted(${transpiledText(node)});`);
         }
     }
 
     // Regular functions
-    const functions = plainMethods.filter(({ id }) => !specialMethods.includes(id));
+    const functions = plainMethods.filter(({ id, node }) => !node.static && !specialMethods.includes(id));
     if (functions?.length) {
         emitLine('\n// Functions');
         for (const { id, node } of functions)
             emitLine(`function ${id}${transpiledText(node.value!)}`);
     }
 
+    // Regular functions
+    const staticFunctions = plainMethods.filter(({ id, node }) => node.static && !specialMethods.includes(id));
+    if (staticFunctions?.length) {
+        emitLine('\n// Static functions');
+        for (const { id, node } of staticFunctions)
+            emitLine(`function ${id}${transpiledText(node.value!)}`);
+    }
+
     return xformed;
 }
+
+function unIndent(bodyText: string) {
+    const lines = bodyText.split('\n');
+    const indentRegex = new RegExp('^( {4}|\t)');
+    bodyText = lines.map(l => l.replace(indentRegex, '')).join('\n');
+    return bodyText;
+}
+

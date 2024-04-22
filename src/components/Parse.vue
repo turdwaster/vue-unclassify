@@ -5,11 +5,13 @@
 	<br clear="all" />
 	<h1>Template</h1>
 	<pre>{{ templateText }}</pre>
+	<h1>Style</h1>
+	<pre>{{ styleText }}</pre>
 </template>
 
 <script setup lang="ts">
 	import { ref } from 'vue';
-	import { transpile } from '../transpiler';
+	import { splitSFC, transpile } from '../transpiler';
 
 	const data = `<template>
 	<div>
@@ -182,13 +184,10 @@ export default class ParamList extends Vue {
 	const scriptText = ref();
 	const transformed = ref('');
 
-	const asHtml = document.createElement('pre');
-	asHtml.innerHTML = data;
-	const html = asHtml.getElementsByTagName('template').item(0)!.outerHTML.trim();
-	templateText.value = html.replace(/=""/g, '');
+	const parts = splitSFC(data.replace(/scrpt/g, 'script'));
+	templateText.value = parts.templateNode;
+	scriptText.value = parts.scriptBody;
+	styleText.value = parts.styleNode;
 
-	const start = data.indexOf('<scrpt lang="ts">') + 17;
-	const codeText = data.slice(start, data.indexOf('</scrpt>'));
-	scriptText.value = codeText;
-	transformed.value = transpile(codeText);
+	transformed.value = parts.scriptBody ? transpile(parts.scriptBody) : '// No script body found';
 </script>
