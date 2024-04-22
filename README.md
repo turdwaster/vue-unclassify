@@ -14,8 +14,6 @@
     const nicety2 = (a: number) => a+7;
 ```
 
-[ ] Only transpile ThisExpressions not to clobber locals: `const gridApi = this.gridApi;`
-
 [ ] Proper transpilation of functions:
 ```
     const quotationLineItemCollection = computed((): QuotationLineItemCollection | undefined => {
@@ -46,7 +44,13 @@ const quotationLineItemCollection = computed((): QuotationLineItemCollection | u
 </script>
 ```
 
-### More expensive TODOs
+### Lower priority TODOs
+[ ] For readonly members (`public readonly CUT: LengthType = 'Custom';`) -> skip ref()
+
+[ ] Fix up `$watch` et al
+
+[ ] Only transpile ThisExpressions not to clobber locals: `const gridApi = this.gridApi;`
+
 [ ] Resolve import name clashes (rename all locals if an imported name matched)
 ```
     import gridMapperService from "@/services/gridMapperService";
