@@ -35,12 +35,15 @@ describe('transpiler', () => {
         const src = `
             import Vue from 'vue';
             import { Component } from 'vue-property-decorator';
+            import { Beirut } from '@/x/y/zyzz';
 
             @Component({ components: { } })
             export default class SelectField extends Vue { }`;
         const res = transpile(src);
         expect(res).toContain('from \'vue\'');
         expect(res).not.toContain('Vue');
+        expect(res).not.toContain('vue-property-decorator')
+        expect(res).toContain('zyzz');
     });
 
     it(`keeps comments`, () => {
@@ -82,7 +85,23 @@ describe('transpiler', () => {
 
             @Component({ components: { } })
             export default class SelectField extends Vue { }`;
-        transpile(src);
+        const res = transpile(src);
+        expect(res).toContain('interface SelectValue');
+    });
+
+    it(`includes code outside default class`, () => {
+        const src = `
+            import Vue from 'vue';
+            import { Component } from 'vue-property-decorator';
+
+            interface SelectValue { text: string; }
+            const extVar = 2;
+
+            @Component({ components: { } })
+            export default class SelectField extends Vue { }`;
+        const res = transpile(src);
+        expect(res).toContain('interface SelectValue');
+        expect(res).toContain('const extVar');
     });
 
     it(`resolves ref.value`, () => {

@@ -1,19 +1,6 @@
 # unclassify
 
 ## TODOs
-[ ] Add everything outside class (types, consts etc)
-```
-    const namespace = StoreModule.quotationLineItem;
-    const notSelectedCell = {
-        rowIndex: -1,
-        columnName: "",
-    };
-    const PERFORMANCE_MAX_ROWS = 25;
-    interface xyzzy { a: number[] }
-    function nicety(a: number) { return a+5; }
-    const nicety2 = (a: number) => a+7;
-```
-
 [ ] Proper transpilation of functions:
 ```
     const quotationLineItemCollection = computed((): QuotationLineItemCollection | undefined => {

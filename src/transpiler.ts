@@ -55,8 +55,19 @@ export function transpile(codeText: string) {
         .filter(x => !removeExports.some(r => x!.includes(r)))
         .map(emitLine);
 
+    // Code outside class
+    const ignoredOutsideTypes = ['EmptyStatement', 'ExportDefaultDeclaration', 'ImportDeclaration'];
+    const outsideCode = code.ast.body.filter(x => !ignoredOutsideTypes.includes(x.type));
+    if (outsideCode?.length) {
+        xformed += '\n'
+        for (const c of outsideCode) {
+            emitComments(c);
+            emitLine(code.getSource(c));
+        }
+    }
+
     const expDefNode = code.ast.body.find(x => x.type === 'ExportDefaultDeclaration') as acorn.ExportDefaultDeclaration;
-    const classNode = expDefNode.declaration as acorn.ClassDeclaration;
+    const classNode = expDefNode?.declaration as acorn.ClassDeclaration;
     if (!classNode)
         return xformed;
 

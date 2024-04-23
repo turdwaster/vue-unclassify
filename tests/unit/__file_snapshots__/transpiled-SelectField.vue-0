@@ -7,6 +7,11 @@ import SimpleWarnings from '@/components/SimpleWarnings.vue';
 import { tryToTranslate } from '@/i18n';
 import colors from '@/sass/_variables.scss';
 
+interface SelectValue {
+	text: string;
+	value: string;
+}
+
 // Props
 const props = defineProps({
 	param: ParamValue,
