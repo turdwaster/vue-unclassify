@@ -1,0 +1,79 @@
+import { ref, computed, watch } from 'vue'
+import { ParameterDef } from 'types/dto/CalcServiceDomain';
+import { ParamBag } from '@/common/ParamBag';
+import DutyPointValue from '@/components/DutyPointValue.vue';
+import { tryToTranslate } from '@/i18n';
+
+// Static shared data (move to separate script section?)
+const killGroups = [ 'Pipe', 'Inlet.Pipes', 'Outlet.Pipes' ];
+const redirectGroups: { [type: string]: string } = {
+		Frame: 'Build',
+		Flange: 'Build',
+		Drive: 'Build'
+	};
+const aggregatedParams: string[];
+
+// Non-reactive data
+let nonReactive: boolean;
+
+// Props
+const props = defineProps({
+	sizingId: string,
+	params: ParamBag,
+	names: string[],
+	inline: boolean,
+	filter: 'All' | 'UserDefined' | 'Basic' | 'Problematic',
+});
+
+// State
+const reactive = ref<ParamBag>(null);
+
+// Watches
+watch(() => reloadTrigger.value, (val: string) => {
+	if (val)
+		reload.trigger();
+});
+
+// This is deep.
+watch(() => deepStuff.value, (val: string) => {
+	if (val)
+		reload.trigger();
+}, { deep: true, immediate: true });
+
+// Computeds
+const compact = computed(() => {
+	return props.names != null && reactive.value != null;
+});
+const groupMap = computed(() => {
+	const map = {} as { [key: string]: ParameterDef };
+	ParamBag.groups.forEach(g => map[g.Name] = g);
+	return map;
+});
+
+// Initialization
+
+if (!ParamList.aggregatedParams)
+	ParamList.aggregatedParams = ParamBag.aggregatedValueNames;;
+
+onMounted(() => {
+	if (!fixedPump)
+		showingAlternatives = true;
+
+	if (fixedPump)
+		expandPump(fixedPump);
+	else
+		searchPumps();
+});
+
+
+// Functions
+function hasProblem(valueName: string) {
+	return props.params.hasProblem(valueName);
+}
+
+
+// Static functions
+function staticUtilityMethod() {
+	console.debug('Niiice');
+}
+

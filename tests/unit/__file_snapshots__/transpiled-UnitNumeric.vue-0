@@ -1,0 +1,252 @@
+import { ref, computed, watch } from 'vue'
+import { ParamValue } from '@/common/ParamValue';
+import { SelectValue } from 'types/dto/CalcServiceDomain';
+import UnitValue from '@/common/UnitValue';
+import CommentIcon from '@/components/CommentIcon.vue';
+import { tryToTranslate } from '@/i18n';
+
+// Props
+const props = defineProps({
+	param: ParamValue,
+	locked: boolean,
+	readwrite: boolean,
+	show: boolean,
+	writable: boolean,
+	customDescription: string,
+	inline: string,
+	onChange: (newValue: any) => void,
+	target: string,
+	minValue: number,
+	maxValue: number,
+});
+
+// State
+const createComment = ref<boolean>(false);
+const currentUnit = ref<Unit>(null);
+const enteredUnit = ref<Unit>(undefined);
+const enteredValue = ref<string>(undefined);
+const unitValue = ref<UnitValue>(null);
+const value = ref<string | SelectValue | null>(null);
+
+// Watches
+watch(() => useImperial.value, (value: boolean) => {
+		if (!unitValue.value)
+			return;
+		const newUnit = unitValue.value.changeSystemOfUnits(value);
+		if (newUnit) {
+			unitChange(newUnit);
+			currentUnit.value = newUnit;
+		}
+	});
+
+// Computeds
+const usableUnits = computed(() => {
+		return unitValue.value?.usableUnits || [];
+	});
+const description = computed(() => {
+		if (props.customDescription)
+			return props.customDescription;
+		const pdef = props.param?.definition;
+		return pdef && (tryToTranslate(pdef.Name) || pdef.Description) || 'No title';
+	});
+const prefix = computed(() => {
+		return isAssumed ? '≈ ' : '';
+	});
+const unit = computed(() => {
+		return unitValue.value?.unitString;
+	});
+const readOnly = computed(() => {
+		return !props.param || (props.param.definition?.ReadOnly && !props.writable) ||
+			props.locked || (props.inline || props.inline === '') || false;
+	});
+const messages = computed(() => {
+		return (warnings || errors) && (warnings || []).concat(errors || []);
+	});
+const useImperial = computed(() => {
+		return props.param.useImperialUnits;
+	});
+const baseUnitValue = computed((): number {
+		return unitValue.value?.baseUnitValue;
+	});
+const predefValues = computed((): SelectValue[] {
+		const unit = currentUnit.value;
+		if (!unit || !props.param)
+			return null;
+
+		const def = props.param?.definition;
+		const values = (unit.imperial && def.ImperialValues || def.Values || []);
+		if (!values || !values.length)
+			return null;
+
+		return values.map(x => {
+			const value = new UnitValue(x.value, unit.id, def.Decimals, unit.imperial).valueString;
+			const text = x.text && x.text !== value ? `${UnitValue.readableString(x.text)} (${value})` : value;
+			return { text, value };
+		});
+	});
+const errorClass = computed(() => {
+		let classNames = isAssumed ? 'assumed ' : '';
+		if (errors?.length)
+			classNames += 'error';
+		else if (warnings?.length)
+			classNames += 'warning';
+		else if (props.param.infos?.length) {
+			// Not testing "full" infos since this would make "Using xx kg" blue
+			classNames += 'info';
+		}
+		return classNames;
+	});
+const staticErrors = computed((): string {
+		const def = props.param?.definition;
+		if (!def || def.ReadOnly)
+			return;
+
+		if (def.Type === 'Number') => {
+			const rawVal = value.value as string;
+			if (rawVal != null && rawVal.length && isNaN(parseFloat(rawVal.replace(',', '.'))))
+				return 'Not a valid number';
+		}
+
+		const val = baseUnitValue.value;
+		if (val != null) {
+			const min = props.minValue ?? def.StaticMin;
+			if (min != null && val < min)
+				return 'Value is too small';
+			const max = props.maxValue ?? def.StaticMax;
+			if (max != null && val > max)
+				return 'Value is too large';
+		}
+	});
+
+// Be sure to return undefined here instead of null, since v-text-field dies if @messages = null
+const errors = computed(() => {
+		if (staticErrors.value)
+			return [staticErrors.value];
+		const e = props.param?.errors;
+		return e?.length && e.map(x => x.Message) || undefined;
+	});
+const warnings = computed(() => {
+		const e = props.param?.warnings;
+		return e?.length && e.map(x => x.Message) || undefined;
+	});
+const infos = computed(() => {
+		if (!props.param)
+			return undefined;
+		let all: string[] = [];
+		const usedMessage = usedMessage(props.param.usedValue);
+		if (usedMessage)
+			all.push(usedMessage);
+		const infos = props.param.infos;
+		if (infos?.length)
+			all = all.concat(infos.map(x => x.Message));
+		return all?.length ? all : undefined;
+	});
+const commentField = computed((): string {
+		return props.param?.valueName;
+	});
+const showMenu = computed(() => {
+		return !!(usableUnits.value.length > 0 || props.target && commentField.value || showToggleAssumed);
+	});
+const showToggleAssumed = computed(() => {
+		return !readOnly.value && props.param?.canBeAssumed && (isAssumed || baseUnitValue.value != null);
+	});
+const isAssumed = computed(() => {
+		return props.param?.isAssumed;
+	});
+const backingValue = computed(() => {
+		return props.param?.getValue();
+	});
+
+// Initialization
+onMounted(() => {
+		if (!props.param)
+			return;
+
+		unitValue.value = props.param.getUnitValue(useImperial.value);
+		currentUnit.value = unitValue.value.unit;
+		loadValue(props.param.getValue());
+
+		// Value is only updated from backend if explicitly specified or if it is read-only,
+		// to avoid write -> update -> write infinite loops
+		const readWrite = props.readwrite || (props.readwrite as any as string) === '';
+		if (readWrite || props.param?.definition?.ReadOnly)
+			$watch('backingValue', (x: any) => loadValue(x));
+	});
+
+
+// Functions
+function toggleAssumed() {
+		props.param?.toggleAssumed();
+	}
+
+function usedMessage(usedValue: string) {
+		if (usedValue == null)
+			return null;
+		const unitId = unitValue.value?.unit?.id;
+		if (!unitId)
+			return null;
+		const uv = new UnitValue(usedValue, unitId, props.param.definition.Decimals, useImperial.value);
+		return 'Using ' + uv.toString();
+	}
+
+function loadValue(value: any) {
+		unitValue.value.setBaseUnitValue(value);
+		value.value = selectedPreset(value) || unitValue.value.valueString;
+	}
+
+function selectedPreset(value: string) {
+		if (value != null && predefValues.value?.length) {
+			const valueInCurrentUnit = unitValue.value?.valueString;
+			// Try to match a unique predefined value if present (weak equality to match numbers against predef:ed strings)
+			// tslint:disable-next-line: triple-equals
+			const predefs = valueInCurrentUnit && predefValues.value.filter(x => (x as any).value == valueInCurrentUnit);
+			if (predefs?.length === 1)
+				return predefs[0];
+		}
+	}
+
+function unitChange(newUnit: Unit, baseUnitValue?: number) {
+		unitValue.value.changeUnit(newUnit);
+
+		const eu = enteredUnit.value;
+		const ev = enteredValue.value;
+		if (eu && ev && newUnit && eu.name === newUnit.name && ev !== value.value) {
+			// Restore previously entered value when switching back to unit used when entering it
+			value.value = enteredValue.value;
+			unitValue.value.set(enteredValue.value);
+		} else
+			value.value = unitValue.value.valueString;
+	}
+
+function valueChange() {
+		let value = value.value as string;
+
+		if (value.value && (value.value as SelectValue).value) {
+			// A SelectValue was selected; set underlying value to current entries' value instead of its text
+			value = (value.value as SelectValue).value;
+
+			// Set current value to the _value_ instead of its text
+			// This is delayed since the v-combobox does not update properly when setting `value.value` if the current
+			// selected object has the same `item-value`. This is also the reason for both item-text and item-value
+			// being set to `text` since the component requires item-value to be unique and removes those with the
+			// same values otherwise.
+			if (value.value !== value)
+				$nextTick(() => value.value = selectedPreset(value) || value);
+		}
+		enteredValue.value = value;
+		enteredUnit.value = unitValue.value.unit;
+		if (unitValue.value.set(value)) {
+			if (!readOnly.value && !staticErrors.value) {
+				if (props.onChange)
+					props.onChange(unitValue.value.baseUnitValue);
+				else
+					props.param.setValue(unitValue.value.baseUnitValue);
+			}
+		}
+	}
+
+function pulseEvent(name: string) {
+		(this as any)[name] = true;
+		$nextTick(() => (this as any)[name] = false);
+	}
+

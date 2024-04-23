@@ -152,6 +152,7 @@ export default class ParamList extends Vue {
 			this.reload.trigger();
 	}
 
+	// This is deep.
 	@Watch('deepStuff', { deep: true, immediate: true })
 	private onDeepChange(val: string) {
 		if (val)

@@ -5,17 +5,21 @@ export function parseTS(code: string) {
     const parser = acorn.Parser.extend(tsPlugin() as any);
 
     try {
+        const comments: acorn.Comment[] = [];
         const ast = parser.parse(code, {
             ecmaVersion: 'latest',
             sourceType: 'module',
+            onComment: comments,
             locations: true // Required for acorn-typescript
         });
 
+        const commentLines = mapComments(code, comments);
         return {
             ast,
             getSource: asSource.bind(null, code),
             deconstructProperty: deconstructProperty.bind(null, code),
-            asLambda: asLambda.bind(null, code)
+            asLambda: asLambda.bind(null, code),
+            getCommentsFor: getCommentsBefore.bind(null, code, commentLines)
         };        
     } catch (ex: any) {
         let msg = '// Transpilation failure - ' + (ex?.message ?? JSON.stringify(ex));
@@ -23,6 +27,41 @@ export function parseTS(code: string) {
             msg += '\n' + code?.split('\n').slice(ex.loc.line - 1, ex.loc.line);
         throw new Error(msg);
     }
+}
+
+function mapComments(code: string, comments: acorn.Comment[]) {
+    comments.reverse();
+    const lines: any = {};
+
+    for (const c of comments) {
+        // Check if comment is on its own line
+        let idx = c.start - 1;
+        while (--idx > 0 && (code[idx] == ' ' || code[idx] == '\t'));
+
+        const onSeparateLine = ['\n', '\r', ' '].includes(code[idx]);
+        let line = c.loc!.end.line;
+
+        // If not on same line as code, move line # to next (code) line
+        if (onSeparateLine)
+            line++;
+
+        // Comment was already found below; merge this one to its line
+        if (lines[line + 1])
+            line++;
+
+        const prefix = c.type === 'Block' ? '/*' : '//';
+        const suffix = c.type === 'Block' ? '*/\n' : '\n';
+        lines[line] = prefix + c.value + suffix + (lines[line] ?? '');
+    }
+
+    return lines;
+}
+
+function getCommentsBefore(code: string, commentLines: any, node: acorn.Node | null | undefined) {
+    const line = node?.loc?.start?.line;
+    if (!line)
+        return '';
+    return commentLines[line];
 }
 
 function deconstructProperty(code: string, node: acorn.PropertyDefinition | acorn.MethodDefinition) {

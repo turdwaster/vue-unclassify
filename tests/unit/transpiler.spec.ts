@@ -1,6 +1,6 @@
 import { splitSFC, transpile } from '@/transpiler';
 import { toMatchFile } from 'jest-file-snapshot';
-import { readVueFile } from './testUtils';
+import { readVueFile, vueFiles } from './testUtils';
 
 expect.extend({ toMatchFile });
 
@@ -20,7 +20,17 @@ function makeClass(body: string) {
         }`;
 }
 
-describe('transpile', () => {
+describe('transpiled', () => {
+    vueFiles.forEach(name =>
+        it(name, () => {
+            const { scriptBody } = splitSFC(readVueFile(name));
+            const code = transpile(scriptBody!);
+            expect(code).toMatchFile();
+        })
+    );
+});
+
+describe('transpiler', () => {
     it(`updates imports`, () => {
         const src = `
             import Vue from 'vue';
@@ -31,6 +41,36 @@ describe('transpile', () => {
         const res = transpile(src);
         expect(res).toContain('from \'vue\'');
         expect(res).not.toContain('Vue');
+    });
+
+    it(`keeps comments`, () => {
+        const src = `
+            import Vue from 'vue';
+            import { Component } from 'vue-property-decorator';
+
+            // Boy, what a great class!
+            @Component
+            export default class SelectField extends Vue {
+                // Best member ever!
+                public a = 2;
+
+                // Two lines (1)
+                // Two lines (2)
+                public b = 2;
+
+                /* Block comment #1
+                   Block comment #2 */
+                private x: any;
+
+                private c: any; // Same line comment
+            }`;
+
+        const res = transpile(src);
+        for (const comment of ['Boy, what a great class!', 'Best member ever!', 'Two lines (1)', 'Two lines (2)',
+            'Block comment #1', 'Block comment #2', 'Same line comment']) {
+            expect(res).toContain(comment);    
+            expect(res.indexOf(comment)).toEqual(res.lastIndexOf(comment));
+        }
     });
 
     it(`handles interface before @Component`, () => {
