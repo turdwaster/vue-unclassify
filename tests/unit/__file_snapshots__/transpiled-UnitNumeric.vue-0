@@ -38,17 +38,6 @@ const enteredValue = ref<string>(undefined);
 const unitValue = ref<UnitValue>(null);
 const value = ref<string | SelectValue | null>(null);
 
-// Watches
-watch(() => useImperial.value, (value: boolean) => {
-		if (!unitValue.value)
-			return;
-		const newUnit = unitValue.value.changeSystemOfUnits(value);
-		if (newUnit) {
-			unitChange(newUnit);
-			currentUnit.value = newUnit;
-		}
-	});
-
 // Computeds
 const usableUnits = computed(() => {
 		return unitValue.value?.usableUnits || [];
@@ -165,6 +154,17 @@ const isAssumed = computed(() => {
 	});
 const backingValue = computed(() => {
 		return props.param?.getValue();
+	});
+
+// Watches
+watch(() => useImperial.value, (value: boolean) => {
+		if (!unitValue.value)
+			return;
+		const newUnit = unitValue.value.changeSystemOfUnits(value);
+		if (newUnit) {
+			unitChange(newUnit);
+			currentUnit.value = newUnit;
+		}
 	});
 
 // Initialization

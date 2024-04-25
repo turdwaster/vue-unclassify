@@ -137,4 +137,42 @@ describe('transpiler', () => {
         expect(res).toContain('typeLess2 = ref({');
         expect(res).toContain('typeLess3 = ref(9');
     });
+
+    it(`handles shadowed non-refs`, () => {
+        const src = makeClass(`
+        pumpGridTab = 'a';
+        gridApi: GridApi | undefined;
+    
+        setGridTab(autoSizeColumns = true): void {
+            if (!this.pumpGridTab || !this.gridApi)
+                return;
+            const gridApi = this.gridApi;
+            gridApi.deselectAll();
+        }
+    
+        get selectedLineItems() {
+            return store.getters["selectedItemsIds"] as string[];
+        }
+        
+        @Watch("selectedLineItems")
+        onSelectedItemsChange() {
+            if (
+                this.selectedLineItems &&
+                this.selectedLineItems.length == 0 &&
+                this.gridApi
+            ) {
+                this.gridApi.deselectAll();
+            }
+        }`);
+
+        const res = transpile(src);
+        expect(res).not.toContain('this.selectedLineItems');
+        expect(res).not.toContain('this.gridApi');
+        expect(res).not.toContain('gridApi.value');
+        expect(res).not.toContain('selectedLineItems &&');
+        expect(res).not.toContain('selectedLineItems.length');
+        expect(res).toContain('gridApi = gridApi');
+        expect(res).toContain('selectedLineItems.value');
+        expect(res).toContain('selectedLineItems = computed');
+    });
 });

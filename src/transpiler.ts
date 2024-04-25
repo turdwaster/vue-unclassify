@@ -150,7 +150,7 @@ export function transpile(codeText: string) {
         // this.[computed] -> [computed].value
         for (const prop of Object.keys(computedIdentifiers))
             bodyText = replaceThisExpr(bodyText, prop, '', '.value');
-        
+
         // this.[other member] -> [other member]
         bodyText = bodyText.replace(/([^a-zA-Z0-9])this\./g, '$1');
 
@@ -159,6 +159,17 @@ export function transpile(codeText: string) {
 
     const methods = memberNodes.filter(x => x.type === 'MethodDefinition') as acorn.MethodDefinition[];
 
+    // Computeds
+    const computeds = methods.filter(x => !isDecorated(x) && x.kind == 'get').map(code.deconstructProperty);
+    if (computeds?.length) {
+        emitLine('\n// Computeds');
+        for (const { id, node } of computeds) {
+            computedIdentifiers[id] = node;
+            emitComments(node);
+            emitLine(`const ${id} = computed(${transpiledText(node)});`);
+        }
+    }
+    
     // Watches
     const watches = methods.filter(x => isDecoratedWith(x, 'Watch')).map(code.deconstructProperty);
     if (watches?.length) {
@@ -169,17 +180,6 @@ export function transpile(codeText: string) {
             const decoArg1 = (deco.arguments?.length > 1 ? deco.arguments[1] : null) as acorn.Expression;
             emitComments(node);
             emitLine(`watch(() => ${decoArg}.value, ${transpiledText(node)}${decoArg1 ? (', ' + code.getSource(decoArg1)) : ''});`);
-        }
-    }
-
-    // Computeds
-    const computeds = methods.filter(x => !isDecorated(x) && x.kind == 'get').map(code.deconstructProperty);
-    if (computeds?.length) {
-        emitLine('\n// Computeds');
-        for (const { id, node } of computeds) {
-            computedIdentifiers[id] = node;
-            emitComments(node);
-            emitLine(`const ${id} = computed(${transpiledText(node)});`);
         }
     }
 

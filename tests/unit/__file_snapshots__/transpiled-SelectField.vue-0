@@ -32,11 +32,6 @@ const selected = ref<SelectValue>(null);
 const internalErrors = ref<string[]>([]);
 const showCommentIcon = ref<boolean>(false);
 
-// Watches
-watch(() => items.value, (items: any) => {
-	setValues(items);
-});
-
 // Computeds
 const description = computed(() => {
 	const pdef = props.param?.definition;
@@ -76,6 +71,11 @@ const commentField = computed((): string {
 });
 const backingValue = computed(() => {
 	return props.param?.getValue();
+});
+
+// Watches
+watch(() => items.value, (items: any) => {
+	setValues(items);
 });
 
 // Initialization

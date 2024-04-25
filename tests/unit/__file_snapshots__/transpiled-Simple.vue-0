@@ -28,6 +28,16 @@ const props = defineProps({
 // State
 const reactive = ref<ParamBag>(null);
 
+// Computeds
+const compact = computed(() => {
+	return props.names != null && reactive.value != null;
+});
+const groupMap = computed(() => {
+	const map = {} as { [key: string]: ParameterDef };
+	ParamBag.groups.forEach(g => map[g.Name] = g);
+	return map;
+});
+
 // Watches
 watch(() => reloadTrigger.value, (val: string) => {
 	if (val)
@@ -39,16 +49,6 @@ watch(() => deepStuff.value, (val: string) => {
 	if (val)
 		reload.trigger();
 }, { deep: true, immediate: true });
-
-// Computeds
-const compact = computed(() => {
-	return props.names != null && reactive.value != null;
-});
-const groupMap = computed(() => {
-	const map = {} as { [key: string]: ParameterDef };
-	ParamBag.groups.forEach(g => map[g.Name] = g);
-	return map;
-});
 
 // Initialization
 

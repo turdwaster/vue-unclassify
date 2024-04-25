@@ -36,8 +36,6 @@ const quotationLineItemCollection = computed((): QuotationLineItemCollection | u
 
 [ ] Fix up `$watch` et al
 
-[ ] Only transpile ThisExpressions not to clobber locals: `const gridApi = this.gridApi;`
-
 [ ] Resolve import name clashes (rename all locals if an imported name matched)
 ```
     import gridMapperService from "@/services/gridMapperService";
