@@ -1,7 +1,7 @@
 import acorn from 'acorn';
 import { isDecorated, isDecoratedWith, parseTS } from './astTools';
 
-const removeExports = ['vue-property-decorator', 'vue-facing-decorator', ' Vue ', ' Vue, '];
+const removeExports = ['vue-property-decorator', 'vue-class-component', 'vue-facing-decorator', ' Vue ', ' Vue, '];
 
 export function splitSFC(text: string) {
     const scriptNode = extractTag(text, 'script');

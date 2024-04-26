@@ -14,6 +14,9 @@ dependencies:
   acorn-typescript:
     specifier: ^1.4.13
     version: 1.4.13(acorn@8.11.3)
+  highlight.js:
+    specifier: ^11.9.0
+    version: 11.9.0
   vue:
     specifier: ^3.4.25
     version: 3.4.25(typescript@4.5.5)
@@ -1826,6 +1829,11 @@ packages:
     dependencies:
       function-bind: 1.1.2
     dev: true
+
+  /highlight.js@11.9.0:
+    resolution: {integrity: sha512-fJ7cW7fQGCYAkgv4CPfwFHrfd/cLS4Hau96JuJ+ZTOWhjnhoeN1ub1tFmALm/+lW5z4WCAuAV9bm05AP0mS6Gw==}
+    engines: {node: '>=12.0.0'}
+    dev: false
 
   /html-encoding-sniffer@2.0.1:
     resolution: {integrity: sha512-D5JbOMBIR/TVZkubHT+OyT2705QvogUW4IBn6nHd756OwieSF9aDYFj4dv6HHEVGYbHaLETa3WggZYWWMyy3ZQ==}
