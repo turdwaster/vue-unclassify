@@ -1,24 +1,17 @@
 # unclassify
 
+Generate Vue3 composition SFC from Vue2 class-based SFC.
+
+## Useful links
+[AST explorer, many languages etc](https://astexplorer.net/)
+[AST viewer for TypeScript (not ESTree format?)](https://ts-ast-viewer.com/)
+
 ## TODOs
-[ ] Proper transpilation of functions:
-```
-    const quotationLineItemCollection = computed((): QuotationLineItemCollection | undefined => {
-        if (inHistoryMode.value === true) {
-            return revisionQuotationLineItemCollection.value;
-        }
-        return latestQuotationLineItemCollection.value;
-    });
-``` 
-currently becomes
-```
-const quotationLineItemCollection = computed((): QuotationLineItemCollection | undefined {
-        if (inHistoryMode.value === true) => {
-            return revisionQuotationLineItemCollection.value;
-        }
-        return latestQuotationLineItemCollection.value;
-    });
-```
+[ ] Newline between functions
+
+[ ] Function indentation - align block start/end
+
+[ ] `computed(..., () => { \n* return y.value; \n* });` -> `computed(..., () => y.value);`
 
 [ ] Handle toNative:
 ```
@@ -34,7 +27,7 @@ const quotationLineItemCollection = computed((): QuotationLineItemCollection | u
 ### Lower priority TODOs
 [ ] For readonly members (`public readonly CUT: LengthType = 'Custom';`) -> skip ref()
 
-[ ] Fix up `$watch` et al
+[ ] Fix up `$watch` (et al)
 
 [ ] Resolve import name clashes (rename all locals if an imported name matched)
 ```
