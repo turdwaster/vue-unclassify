@@ -1,4 +1,4 @@
-import * as acorn from 'acorn';
+import acorn from 'acorn';
 import { isDecorated, isDecoratedWith, parseTS } from './astTools';
 
 const removeExports = ['vue-property-decorator', 'vue-facing-decorator', ' Vue ', ' Vue, '];

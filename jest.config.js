@@ -1,3 +1,8 @@
+/** @type {import('ts-jest').JestConfigWithTsJest} */
 module.exports = {
-  preset: '@vue/cli-plugin-unit-jest/presets/typescript-and-babel'
-}
+  preset: 'ts-jest',
+  testEnvironment: 'node',
+  moduleNameMapper: {
+    "@/(.*)": "<rootDir>/src/$1"
+  }
+};
