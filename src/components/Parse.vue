@@ -38,5 +38,5 @@
 		} catch(ex: any) {
 			transformed.value = ex?.message ?? JSON.stringify(ex);
 		}
-	});
+	}, { immediate: true });
 </script>
