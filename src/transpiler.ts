@@ -70,7 +70,7 @@ export function transpile(codeText: string) {
     if (outsideCode?.length) {
         for (const c of outsideCode) {
             emitComments(c);
-            emitLine(code.getSource(c));
+            emitLine(unIndent(code.getSource(c)!));
         }
         emitLine('\n');
     }
@@ -82,6 +82,7 @@ export function transpile(codeText: string) {
 
     emitComments(classNode);
 
+    const className = code.getSource(classNode.id);
     const memberNodes = classNode.body.body;
     const properties = memberNodes.filter(x => x.type === 'PropertyDefinition') as acorn.PropertyDefinition[];
 
@@ -91,7 +92,8 @@ export function transpile(codeText: string) {
         emitSectionHeader('Static shared data (move to separate script section?)');
         for (const { id, typeStr, node } of staticMembers) {
             emitComments(node);
-            emitLine(`const ${id}${typeStr ? ': ' + typeStr : ''}${node.value != null ? ' = ' + code.getSource(node.value) : ''};`);
+            const initializer = node.value != null ? ' = ' + unIndent(code.getSource(node.value)!) : '';
+            emitLine(`const ${id}${typeStr ? ': ' + typeStr : ''}${initializer};`);
         }
         emitLine('\n');
     }
@@ -143,6 +145,8 @@ export function transpile(codeText: string) {
     }
 
     const computedIdentifiers: { [id: string]: acorn.Node } = {};
+    const staticRefRegexp = new RegExp(`([^a-zA-Z0-9])${className}\\.`, 'g');
+    const otherMemberRegexp = new RegExp(`([^a-zA-Z0-9])this\\.`, 'g');
 
     function transpiledText(node: acorn.MethodDefinition | acorn.PropertyDefinition | acorn.Expression) {
         let bodyText: string;
@@ -163,8 +167,11 @@ export function transpile(codeText: string) {
         for (const prop of Object.keys(computedIdentifiers))
             bodyText = replaceThisExpr(bodyText, prop, '', '.value');
 
+        // <className>.method/property (static member reference)
+        bodyText = bodyText.replace(staticRefRegexp, '$1');
+
         // this.[other member] -> [other member]
-        bodyText = bodyText.replace(/([^a-zA-Z0-9])this\./g, '$1');
+        bodyText = bodyText.replace(otherMemberRegexp, '$1');
 
         return unIndent(bodyText);
     }

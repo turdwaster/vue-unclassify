@@ -7,8 +7,6 @@ Generate Vue3 composition SFC from Vue2 class-based SFC.
 [AST viewer for TypeScript (not ESTree format?)](https://ts-ast-viewer.com/)
 
 ## TODOs
-[ ] Fix up code (incl. init!) that refers to static members; see Simple.vue
-
 [ ] Fix up `$watch` (et al)
 
 [ ] Handle toNative:

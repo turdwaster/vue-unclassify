@@ -156,11 +156,7 @@ describe('transpiler', () => {
         
         @Watch("selectedLineItems")
         onSelectedItemsChange() {
-            if (
-                this.selectedLineItems &&
-                this.selectedLineItems.length == 0 &&
-                this.gridApi
-            ) {
+            if (this.selectedLineItems && this.selectedLineItems.length == 0 && this.gridApi) {
                 this.gridApi.deselectAll();
             }
         }`);
@@ -174,5 +170,34 @@ describe('transpiler', () => {
         expect(res).toContain('gridApi = gridApi');
         expect(res).toContain('selectedLineItems.value');
         expect(res).toContain('selectedLineItems = computed');
+    });
+
+    it(`transpiles static class member refs`, () => {
+        const src = `
+        import Vue from 'vue';
+        import { ParamBag } from '@/common/ParamBag';
+
+        @Component
+        export default class ComponentClass extends Vue {
+            private static staticMember: string[];
+            private static staticMethod() { return 5; }
+
+            public created() {
+                if (!ComponentClass.staticMember)
+                    ComponentClass.staticMember = ParamBag.aggregatedValueNames;
+                ComponentClass.staticMethod();
+            }
+            
+            public get aGetter() {
+                ComponentClass.staticMethod();
+                return ComponentClass.staticMember * ParamBag.aggregatedValueNames;
+            }
+        }`;
+    
+        const res = transpile(src);
+        expect(res).not.toContain('ComponentClass');
+        expect(res).toContain('staticMethod()');
+        expect(res).toContain('staticMember');
+        expect(res).toContain('ParamBag.aggregatedValueNames');
     });
 });

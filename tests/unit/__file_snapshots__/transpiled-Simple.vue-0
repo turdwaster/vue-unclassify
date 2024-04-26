@@ -7,10 +7,10 @@ import { tryToTranslate } from '@/i18n';
 // Static shared data (move to separate script section?)
 const killGroups = [ 'Pipe', 'Inlet.Pipes', 'Outlet.Pipes' ];
 const redirectGroups: { [type: string]: string } = {
-		Frame: 'Build',
-		Flange: 'Build',
-		Drive: 'Build'
-	};
+	Frame: 'Build',
+	Flange: 'Build',
+	Drive: 'Build'
+};
 const aggregatedParams: string[];
 
 // Non-reactive data
@@ -54,8 +54,8 @@ watch(() => deepStuff.value, (val: string) => {
 
 // Initialization
 
-if (!ParamList.aggregatedParams)
-	ParamList.aggregatedParams = ParamBag.aggregatedValueNames;
+if (!aggregatedParams)
+	aggregatedParams = ParamBag.aggregatedValueNames;
 
 onMounted(() => {
 	if (!fixedPump)
