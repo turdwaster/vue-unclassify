@@ -7,11 +7,9 @@ Generate Vue3 composition SFC from Vue2 class-based SFC.
 [AST viewer for TypeScript (not ESTree format?)](https://ts-ast-viewer.com/)
 
 ## TODOs
-[ ] Newline between functions
+[ ] Fix up code (incl. init!) that refers to static members; see Simple.vue
 
-[ ] Function indentation - align block start/end
-
-[ ] `computed(..., () => { \n* return y.value; \n* });` -> `computed(..., () => y.value);`
+[ ] Fix up `$watch` (et al)
 
 [ ] Handle toNative:
 ```
@@ -25,9 +23,11 @@ Generate Vue3 composition SFC from Vue2 class-based SFC.
 ```
 
 ### Lower priority TODOs
+[ ] `computed(..., () => { \n* return y.value; \n* });` -> `computed(..., () => y.value);`
+
 [ ] For readonly members (`public readonly CUT: LengthType = 'Custom';`) -> skip ref()
 
-[ ] Fix up `$watch` (et al)
+[ ] Multiple script/style sections?
 
 [ ] Resolve import name clashes (rename all locals if an imported name matched)
 ```

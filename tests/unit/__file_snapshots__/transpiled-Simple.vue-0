@@ -1,4 +1,4 @@
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { ParameterDef } from 'types/dto/CalcServiceDomain';
 import { ParamBag } from '@/common/ParamBag';
 import DutyPointValue from '@/components/DutyPointValue.vue';
@@ -32,6 +32,7 @@ const reactive = ref<ParamBag>(null);
 const compact = computed(() => {
 	return props.names != null && reactive.value != null;
 });
+
 const groupMap = computed(() => {
 	const map = {} as { [key: string]: ParameterDef };
 	ParamBag.groups.forEach(g => map[g.Name] = g);
@@ -44,6 +45,7 @@ watch(() => reloadTrigger.value, (val: string) => {
 		reload.trigger();
 });
 
+
 // This is deep.
 watch(() => deepStuff.value, (val: string) => {
 	if (val)
@@ -53,7 +55,7 @@ watch(() => deepStuff.value, (val: string) => {
 // Initialization
 
 if (!ParamList.aggregatedParams)
-	ParamList.aggregatedParams = ParamBag.aggregatedValueNames;;
+	ParamList.aggregatedParams = ParamBag.aggregatedValueNames;
 
 onMounted(() => {
 	if (!fixedPump)
@@ -65,12 +67,10 @@ onMounted(() => {
 		searchPumps();
 });
 
-
 // Functions
 function hasProblem(valueName: string) {
 	return props.params.hasProblem(valueName);
 }
-
 
 // Static functions
 function staticUtilityMethod() {

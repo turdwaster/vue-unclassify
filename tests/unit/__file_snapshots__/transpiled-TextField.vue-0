@@ -1,4 +1,4 @@
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { ParamValue } from '@/common/ParamValue';
 import { tryToTranslate } from '@/i18n';
 
@@ -19,55 +19,60 @@ const valid = ref<boolean>(true);
 
 // Computeds
 const description = computed(() => {
-		const pdef = props.param?.definition;
-		return pdef && (tryToTranslate(pdef.Name) || pdef.Description) || 'No title';
-	});
+	const pdef = props.param?.definition;
+	return pdef && (tryToTranslate(pdef.Name) || pdef.Description) || 'No title';
+});
+
 const readOnly = computed(() => {
-		return !props.param || props.param.definition?.ReadOnly || props.locked || false;
-	});
+	return !props.param || props.param.definition?.ReadOnly || props.locked || false;
+});
+
 const messages = computed(() => {
-		return (warnings || errors) && (warnings || []).concat(errors || []);
-	});
+	return (warnings || errors) && (warnings || []).concat(errors || []);
+});
+
 const errorClass = computed(() => {
-		if ((errors || []).length > 0)
-			return 'error';
-		if ((warnings || []).length > 0)
-			return 'warning';
-		return '';
-	});
+	if ((errors || []).length > 0)
+		return 'error';
+	if ((warnings || []).length > 0)
+		return 'warning';
+	return '';
+});
+
 const errors = computed(() => {
-		const e = props.param?.errors;
-		return e?.length && e.map(x => x.Message) || null;
-	});
+	const e = props.param?.errors;
+	return e?.length && e.map(x => x.Message) || null;
+});
+
 const warnings = computed(() => {
-		const e = props.param?.warnings;
-		return e?.length && e.map(x => x.Message) || null;
-	});
+	const e = props.param?.warnings;
+	return e?.length && e.map(x => x.Message) || null;
+});
+
 const backingValue = computed(() => {
-		return props.param?.getValue();
-	});
+	return props.param?.getValue();
+});
 
 // Initialization
 onMounted(() => {
-		if (!props.param)
-			return;
-		if (props.rules)
-			fieldRules.value = [props.rules];
+	if (!props.param)
+		return;
+	if (props.rules)
+		fieldRules.value = [props.rules];
 
-		value.value = props.param.getValue();
+	value.value = props.param.getValue();
 
-		if (props.param?.definition?.ReadOnly)
-			$watch('backingValue', (x: any) => value.value = x);
-	});
-
+	if (props.param?.definition?.ReadOnly)
+		$watch('backingValue', (x: any) => value.value = x);
+});
 
 // Functions
 function valueChange() {
-		if (!valid.value && props.rules != null)
-			return;
-		const value = value.value as string;
-		enteredValue.value = value;
-		if (!readOnly.value)
-			props.param.setValue(enteredValue.value);
-	}
+	if (!valid.value && props.rules != null)
+		return;
+	const value = value.value as string;
+	enteredValue.value = value;
+	if (!readOnly.value)
+		props.param.setValue(enteredValue.value);
+}
 

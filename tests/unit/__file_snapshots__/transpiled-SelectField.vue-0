@@ -1,4 +1,4 @@
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { ParamValue } from '@/common/ParamValue';
 import { MessageSeverity, ValidationResult } from 'types/dto/CalcServiceDomain';
 import UnitValue from '@/common/UnitValue';
@@ -43,6 +43,7 @@ const description = computed(() => {
 	const descr = pdef && (tryToTranslate(pdef.Name) || pdef.Description);
 	return [ descr || 'No title', unit && `(${unit})` ].join(' ').trim();
 });
+
 const unit = computed(() => {
 	const u = props.param?.definition?.Unit;
 	// Don't add stuff that looks like enum value as unit
@@ -50,9 +51,11 @@ const unit = computed(() => {
 		return;
 	return u[0].toUpperCase() + u.slice(1);
 });
+
 const readOnly = computed(() => {
 	return !props.param || props.param.definition?.ReadOnly || props.locked;
 });
+
 const msgs = computed(() => {
 	const internals = (internalErrors.value || []).map(e => ({
 		Severity: MessageSeverity.Error,
@@ -61,14 +64,17 @@ const msgs = computed(() => {
 	} as ValidationResult));
 	return (props.param?.allMessages || []).concat(internals);
 });
+
 const messages = computed(() => {
 	// Show warning if manual items are set but nothing is selectable
 	if (props.items !== undefined && (!props.items || !props.items.length))
 		return 'No options are available';
 });
+
 const commentField = computed((): string {
 	return props.param?.valueName;
 });
+
 const backingValue = computed(() => {
 	return props.param?.getValue();
 });
@@ -98,7 +104,6 @@ onMounted(() => {
 			}
 		});
 });
-
 
 // Functions
 function isSelected(v: SelectValue) {
@@ -191,7 +196,6 @@ function text(sel: any): string {
 	const def = props.param?.definition;
 	return UnitValue.readableString(text, def?.Unit);
 }
-
 
 // Static functions
 function value(sel: SelectValue | string): any {

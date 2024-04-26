@@ -35,9 +35,17 @@ export function transpile(codeText: string) {
     const code = parseTS(codeText);
     let xformed = '';
 
+    function emitSectionHeader(text: string | null) {
+        xformed += `// ${text}\n`;
+    }
+
     function emitLine(text: string | null) {
-        if (text?.length)
-            xformed += `${text}\n`;
+        if (text?.length) {
+            if (text === '\n')
+                xformed += text;
+            else
+                xformed += `${text}\n`;
+        }
     }
 
     function emitComments(node: acorn.Node) {
@@ -49,21 +57,22 @@ export function transpile(codeText: string) {
     }
 
     // Imports
-    emitLine('import { ref, computed, watch } from \'vue\'');
+    emitLine('import { ref, computed, watch, onMounted } from \'vue\'');
     code.ast.body.filter(x => x.type === 'ImportDeclaration')
         .map(code.getSource)
         .filter(x => !removeExports.some(r => x!.includes(r)))
         .map(emitLine);
+    emitLine('\n');
 
     // Code outside class
     const ignoredOutsideTypes = ['EmptyStatement', 'ExportDefaultDeclaration', 'ImportDeclaration'];
     const outsideCode = code.ast.body.filter(x => !ignoredOutsideTypes.includes(x.type));
     if (outsideCode?.length) {
-        xformed += '\n'
         for (const c of outsideCode) {
             emitComments(c);
             emitLine(code.getSource(c));
         }
+        emitLine('\n');
     }
 
     const expDefNode = code.ast.body.find(x => x.type === 'ExportDefaultDeclaration') as acorn.ExportDefaultDeclaration;
@@ -79,48 +88,51 @@ export function transpile(codeText: string) {
     // Static non-reactive data (static properties)
     const staticMembers = properties.filter(x => x.static).map(code.deconstructProperty);
     if (staticMembers?.length) {
-        emitLine('\n// Static shared data (move to separate script section?)');
+        emitSectionHeader('Static shared data (move to separate script section?)');
         for (const { id, typeStr, node } of staticMembers) {
             emitComments(node);
             emitLine(`const ${id}${typeStr ? ': ' + typeStr : ''}${node.value != null ? ' = ' + code.getSource(node.value) : ''};`);
         }
+        emitLine('\n');
     }
 
     // Static non-reactive data (uninitialized instance properties)
     const nonReactiveMembers = properties.filter(x => !x.static && !isDecorated(x) && x.value == null).map(code.deconstructProperty);
     if (nonReactiveMembers?.length) {
-        emitLine('\n// Non-reactive data');
+        emitSectionHeader('Non-reactive data');
         for (const { id, typeStr, node } of nonReactiveMembers) {
             code.deconstructProperty(node);
             emitComments(node);
             emitLine(`let ${id}${typeStr ? ': ' + typeStr : ''};`);
         }
+        emitLine('\n');
     }
 
     // Props
     const props = properties.filter(x => isDecoratedWith(x, 'Prop')).map(code.deconstructProperty);
     const propIdentifiers: { [id: string]: acorn.Node } = {};
     if (props?.length) {
-        emitLine('\n// Props');
+        emitSectionHeader('Props');
         emitLine('const props = defineProps({');
         for (const { id, typeStr, node } of props) {
             propIdentifiers[id] = node;
             emitComments(node);
             emitLine(`\t${id}${typeStr ? ': ' + typeStr : ''}${node.value != null ? ' = ' + code.getSource(node.value) : ''},`);
         }
-        emitLine('});');
+        emitLine('});\n');
     }
 
     // Refs
     const refs = properties.filter(x => !x.static && !isDecorated(x) && x.value != null).map(code.deconstructProperty);
     const refIdentifiers: { [id: string]: acorn.Node } = {};
     if (refs?.length) {
-        emitLine('\n// State');
+        emitSectionHeader('State');
         for (const { id, typeStr, node } of refs) {
             refIdentifiers[id] = node;
             emitComments(node);
             emitLine(`const ${id} = ref${typeStr ? (`<${typeStr}>`) : ''}(${code.getSource(node.value)});`);
         }
+        emitLine('\n');
     }
 
     // function/lambda body transpilation
@@ -162,24 +174,24 @@ export function transpile(codeText: string) {
     // Computeds
     const computeds = methods.filter(x => !isDecorated(x) && x.kind == 'get').map(code.deconstructProperty);
     if (computeds?.length) {
-        emitLine('\n// Computeds');
+        emitSectionHeader('Computeds');
         for (const { id, node } of computeds) {
             computedIdentifiers[id] = node;
             emitComments(node);
-            emitLine(`const ${id} = computed(${transpiledText(node)});`);
+            emitLine(`const ${id} = computed(${transpiledText(node)});\n`);
         }
     }
     
     // Watches
     const watches = methods.filter(x => isDecoratedWith(x, 'Watch')).map(code.deconstructProperty);
     if (watches?.length) {
-        emitLine('\n// Watches');
-        for (const { id, node } of watches) {
+        emitSectionHeader('Watches');
+        for (const { node } of watches) {
             const deco = (node as any).decorators[0].expression as acorn.CallExpression;
             const decoArg = (deco.arguments[0] as acorn.Literal).value;
             const decoArg1 = (deco.arguments?.length > 1 ? deco.arguments[1] : null) as acorn.Expression;
             emitComments(node);
-            emitLine(`watch(() => ${decoArg}.value, ${transpiledText(node)}${decoArg1 ? (', ' + code.getSource(decoArg1)) : ''});`);
+            emitLine(`watch(() => ${decoArg}.value, ${transpiledText(node)}${decoArg1 ? (', ' + code.getSource(decoArg1)) : ''});\n`);
         }
     }
 
@@ -189,11 +201,11 @@ export function transpile(codeText: string) {
     const specialMethods = ['created', 'mounted'];
     const specialFunctions = plainMethods.filter(({ id }) => specialMethods.includes(id));
     if (specialFunctions?.length) {
-        emitLine('\n// Initialization');
+        emitSectionHeader('Initialization');
         for (const { id, node } of specialFunctions) {
             emitComments(node);
             if (id == 'created')
-                emitLine(unIndent(transpiledText((node.value! as any).body)).slice(2, -3) + ';\n');
+                emitLine(unIndent(transpiledText((node.value! as any).body)).slice(2, -3) + '\n');
             else if (id == 'mounted')
                 emitLine(`onMounted(${transpiledText(node)});\n`);
         }
@@ -202,17 +214,17 @@ export function transpile(codeText: string) {
     // Regular functions
     const functions = plainMethods.filter(({ id, node }) => !node.static && !specialMethods.includes(id));
     if (functions?.length) {
-        emitLine('\n// Functions');
+        emitSectionHeader('Functions');
         for (const { id, node } of functions) {
             emitComments(node);
             emitLine(`function ${id}${transpiledText(node.value!)}\n`);
         }
     }
 
-    // Regular functions
+    // Static functions
     const staticFunctions = plainMethods.filter(({ id, node }) => node.static && !specialMethods.includes(id));
     if (staticFunctions?.length) {
-        emitLine('\n// Static functions');
+        emitSectionHeader('Static functions');
         for (const { id, node } of staticFunctions) {
             emitComments(node);
             emitLine(`function ${id}${transpiledText(node.value!)}\n`);
@@ -222,10 +234,20 @@ export function transpile(codeText: string) {
     return xformed;
 }
 
+const indentRegex = /^([ \t]+)(?:[^\s]|$)/;
+
 function unIndent(bodyText: string) {
-    const lines = bodyText.split('\n');
-    const indentRegex = new RegExp('^( {4}|\t)');
-    bodyText = lines.map(l => l.replace(indentRegex, '')).join('\n');
+    let lines = bodyText.split('\n');
+    if (lines.length > 1) {
+        let minIndent: string | null = null;
+        for (const line of lines) {
+            const lineIndent = indentRegex.exec(line)?.[1];
+            if (lineIndent?.length && (minIndent == null || lineIndent.length < minIndent.length))
+                minIndent = lineIndent;
+        }
+
+        if (minIndent?.length)
+            bodyText = lines.map(l => l.replace(minIndent!, '')).join('\n');
+    }
     return bodyText;
 }
-
