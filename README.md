@@ -7,10 +7,6 @@ Generate Vue3 composition SFC from Vue2 class-based SFC.
 [AST viewer for TypeScript (not ESTree format?)](https://ts-ast-viewer.com/)
 
 ## TODOs
-[ ] `$watch`
-
-[ ] $refs
-
 [ ] Handle toNative:
 ```
 <script lang="ts">
@@ -23,6 +19,8 @@ Generate Vue3 composition SFC from Vue2 class-based SFC.
 ```
 
 ### Lower priority TODOs
+[ ] `this.$refs.xyz.focus` -> `const xyz = ref(); ... xyz.value.focus();`
+
 [ ] `computed(..., () => { \n* return y.value; \n* });` -> `computed(..., () => y.value);`
 
 [ ] For readonly members (`public readonly CUT: LengthType = 'Custom';`) -> skip ref()
