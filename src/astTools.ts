@@ -3,7 +3,6 @@ import { tsPlugin } from 'acorn-typescript';
 
 export function parseTS(code: string) {
     const parser = acorn.Parser.extend(tsPlugin() as any);
-
     try {
         const comments: acorn.Comment[] = [];
         const ast = parser.parse(code, {
@@ -31,9 +30,9 @@ export function parseTS(code: string) {
 
 function mapComments(code: string, comments: acorn.Comment[]) {
     comments.reverse();
-    const lines: any = {};
+    const lines: { [line: number] : string } = {};
 
-    for (const c of comments) {
+    for (const c of comments.filter(x => x.value)) {
         // Check if comment is on its own line
         let idx = c.start - 1;
         while (--idx > 0 && (code[idx] == ' ' || code[idx] == '\t'));
@@ -53,11 +52,10 @@ function mapComments(code: string, comments: acorn.Comment[]) {
         const suffix = c.type === 'Block' ? '*/\n' : '\n';
         lines[line] = prefix + c.value + suffix + (lines[line] ?? '');
     }
-
     return lines;
 }
 
-function getCommentsBefore(code: string, commentLines: any, node: acorn.Node | null | undefined) {
+function getCommentsBefore(code: string, commentLines: { [line: number] : string }, node: acorn.Node | null | undefined) {
     const line = node?.loc?.start?.line;
     if (!line)
         return '';
@@ -105,7 +103,7 @@ export function decorators(node: acorn.Node) {
     return decorators?.length > 0 ? decorators.map((d: any) => d.expression?.callee?.name as string).filter(x => x) : [];
 }
 
-export function applyRecursively(node: acorn.Node, method: (node: acorn.Node) => void) {
+export function applyRecursively(node: acorn.AnyNode, method: (node: acorn.AnyNode) => void) {
     if (typeof node?.type !== 'string')
         return;
 
@@ -116,8 +114,8 @@ export function applyRecursively(node: acorn.Node, method: (node: acorn.Node) =>
             continue;
         
         if (Array.isArray(value))
-            (value as acorn.Node[]).forEach(el => applyRecursively(el, method));
+            (value as acorn.AnyNode[]).forEach(el => applyRecursively(el, method));
         else
-            applyRecursively(value as acorn.Node, method);
+            applyRecursively(value as acorn.AnyNode, method);
     }
 }

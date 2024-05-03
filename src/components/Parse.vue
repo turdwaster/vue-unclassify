@@ -4,7 +4,7 @@
 		<pre style="float: right; width: 48%; margin: 0; margin-top: -16px; padding: 0;">
 			<code class="hljs" v-html="transformed" style="height: 75vh;"></code>
 		</pre>
-		<textarea v-model="scriptText" style="width: 48%; height: 75vh; margin-left: 0; padding-left: 0" />
+		<textarea v-model="scriptText" style="width: 48%; height: 75vh; margin: 0; padding: 8px" />
 		<br clear="all" />
 		<h1>Template</h1>
 		<pre>{{ templateText }}</pre>

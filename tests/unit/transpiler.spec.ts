@@ -200,4 +200,20 @@ describe('transpiler', () => {
         expect(res).toContain('staticMember');
         expect(res).toContain('ParamBag.aggregatedValueNames');
     });
+
+    it(`handles shadowed non-refs`, () => {
+        const src = makeClass(`
+    	@Watch("filterJson")
+        public onFilterChange() {
+            this.$emit("filter", this.filter);
+        }
+        filter() { alert("Hit!"); }
+        `);
+
+        const res = transpile(src);
+        expect(res).toContain('emit("filter", filter)');
+        expect(res).toContain('const emit = defineEmits([\'filter\']);');
+        expect(res).not.toContain('$emit');
+        expect(res).not.toContain('this');
+    });
 });

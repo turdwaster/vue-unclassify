@@ -1,5 +1,5 @@
 import acorn from 'acorn';
-import { isDecorated, isDecoratedWith, parseTS } from './astTools';
+import { applyRecursively, isDecorated, isDecoratedWith, parseTS } from './astTools';
 
 const removeExports = ['vue-property-decorator', 'vue-class-component', 'vue-facing-decorator', ' Vue ', ' Vue, '];
 
@@ -34,6 +34,7 @@ export function transpile(codeText: string) {
 
     const code = parseTS(codeText);
     let xformed = '';
+    const issues: { message: string, node: acorn.AnyNode }[] = [];
 
     function emitSectionHeader(text: string | null) {
         xformed += `// ${text}\n`;
@@ -70,9 +71,8 @@ export function transpile(codeText: string) {
     if (outsideCode?.length) {
         for (const c of outsideCode) {
             emitComments(c);
-            emitLine(unIndent(code.getSource(c)!));
+            emitLine(unIndent(code.getSource(c)! + '\n'));
         }
-        emitLine('\n');
     }
 
     const expDefNode = code.ast.body.find(x => x.type === 'ExportDefaultDeclaration') as acorn.ExportDefaultDeclaration;
@@ -124,6 +124,26 @@ export function transpile(codeText: string) {
         emitLine('});\n');
     }
 
+    // Emits - found by usage
+    const emits: { [id: string]: acorn.Node } = {};
+    applyRecursively(classNode.body, n => {
+        if (n.type === 'CallExpression' && n.callee.type === 'MemberExpression') {
+            const name = code.getSource(n.callee.property);
+            if (name === '$emit' && n.arguments?.length >= 1) {
+                const eventName = (n.arguments[0] as acorn.Literal).value;
+                if (typeof eventName === 'string' && !emits[eventName])
+                    emits[eventName] = n;
+                else
+                    issues.push({ message: 'Failed to interpret $emit call', node: n })
+            }
+        }
+    });
+    const emitNames = Object.keys(emits);
+    if (emitNames.length) {
+        emitSectionHeader('Emits');
+        emitLine(`const emit = defineEmits(['${emitNames.join('\', \'')}']);\n`);
+    }
+
     // Refs
     const refs = properties.filter(x => !x.static && !isDecorated(x) && x.value != null).map(code.deconstructProperty);
     const refIdentifiers: { [id: string]: acorn.Node } = {};
@@ -140,12 +160,13 @@ export function transpile(codeText: string) {
     // function/lambda body transpilation
 
     function replaceThisExpr(code: string, member: string, prefix?: string, suffix?: string) {
-        const regex = new RegExp(`this\\.${member}([^a-zA-Z0-9])`, 'g');
-        return code.replace(regex, `${prefix ?? ''}${member}${suffix ?? ''}$1`)
+        const regex = new RegExp(`([^a-zA-Z0-9])this\\.${member}([^a-zA-Z0-9])`, 'g');
+        return code.replace(regex, `$1${prefix ?? ''}${member}${suffix ?? ''}$2`)
     }
 
     const computedIdentifiers: { [id: string]: acorn.Node } = {};
     const staticRefRegexp = new RegExp(`([^a-zA-Z0-9])${className}\\.`, 'g');
+    const emitRegexp = new RegExp(`([^a-zA-Z0-9])this\\.\\$emit(\\s?\\()`, 'g');
     const otherMemberRegexp = new RegExp(`([^a-zA-Z0-9])this\\.`, 'g');
 
     function transpiledText(node: acorn.MethodDefinition | acorn.PropertyDefinition | acorn.Expression) {
@@ -166,6 +187,9 @@ export function transpile(codeText: string) {
         // this.[computed] -> [computed].value
         for (const prop of Object.keys(computedIdentifiers))
             bodyText = replaceThisExpr(bodyText, prop, '', '.value');
+
+        // this.$emit(ev, ...) -> emit(ev, ...)
+        bodyText = bodyText.replace(emitRegexp, '$1emit$2');
 
         // <className>.method/property (static member reference)
         bodyText = bodyText.replace(staticRefRegexp, '$1');
@@ -236,6 +260,11 @@ export function transpile(codeText: string) {
             emitComments(node);
             emitLine(`function ${id}${transpiledText(node.value!)}\n`);
         }
+    }
+
+    if (issues?.length) {
+        emitSectionHeader('Transpilation issues');
+        issues.forEach(x => emitLine(`// * ${x.message} (at ${x.node.loc?.start?.line}:${x.node.loc?.start?.column})`));
     }
 
     return xformed;
