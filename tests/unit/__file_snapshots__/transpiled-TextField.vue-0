@@ -63,7 +63,7 @@ onMounted(() => {
 	value.value = props.param.getValue();
 
 	if (props.param?.definition?.ReadOnly)
-		$watch('backingValue', (x: any) => value.value = x);
+		watch(() => backingValue.value, (x: any) => value.value = x);
 });
 
 // Functions

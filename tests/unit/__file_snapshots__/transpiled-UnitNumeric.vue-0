@@ -198,7 +198,7 @@ onMounted(() => {
 	// to avoid write -> update -> write infinite loops
 	const readWrite = props.readwrite || (props.readwrite as any as string) === '';
 	if (readWrite || props.param?.definition?.ReadOnly)
-		$watch('backingValue', (x: any) => loadValue(x));
+		watch(() => backingValue.value, (x: any) => loadValue(x));
 });
 
 // Functions

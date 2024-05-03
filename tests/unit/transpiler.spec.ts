@@ -201,7 +201,29 @@ describe('transpiler', () => {
         expect(res).toContain('ParamBag.aggregatedValueNames');
     });
 
-    it(`handles shadowed non-refs`, () => {
+    it(`transpiles $watch statements`, () => {
+        const src = makeClass(`
+        public saveTrigger = 123;
+
+		public async created () {
+			this.$watch('saveTrigger', () => this.saveModule()); 
+		}
+
+		mounted() {
+			this.$watch('saveTrigger', (val) => {
+				if (true || this.saveTrigger > 5)
+					this.deleteModule();
+			});
+		}`);
+
+        const res = transpile(src);
+        expect(res).toContain('watch(() => saveTrigger.value, () =>');
+        expect(res).toContain('watch(() => saveTrigger.value, (val) =>');
+        expect(res).not.toContain('$watch');
+        expect(res).not.toContain('this');
+    });
+
+    it(`transpiles $emit statements`, () => {
         const src = makeClass(`
     	@Watch("filterJson")
         public onFilterChange() {

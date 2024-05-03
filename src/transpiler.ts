@@ -167,6 +167,7 @@ export function transpile(codeText: string) {
     const computedIdentifiers: { [id: string]: acorn.Node } = {};
     const staticRefRegexp = new RegExp(`([^a-zA-Z0-9])${className}\\.`, 'g');
     const emitRegexp = new RegExp(`([^a-zA-Z0-9])this\\.\\$emit(\\s?\\()`, 'g');
+    const watchRegexp = new RegExp(`([^a-zA-Z0-9])this\\.\\$watch\\s?\\(\\s?['"]([^'"]+)['"]`, 'g');
     const otherMemberRegexp = new RegExp(`([^a-zA-Z0-9])this\\.`, 'g');
 
     function transpiledText(node: acorn.MethodDefinition | acorn.PropertyDefinition | acorn.Expression) {
@@ -175,6 +176,9 @@ export function transpile(codeText: string) {
             bodyText = code.asLambda(node)!;
         else
             bodyText = code.getSource(node)!;
+
+        // this.$watch(...) -> watch(...) (keep `this.` to apply observables etc below)
+        bodyText = bodyText.replace(watchRegexp, '$1watch(() => this.$2');
 
         // this.[prop] -> props.[prop]
         for (const prop of Object.keys(propIdentifiers))
