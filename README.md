@@ -7,16 +7,6 @@ Generate Vue3 composition SFC from Vue2 class-based SFC.
 [AST viewer for TypeScript (not ESTree format?)](https://ts-ast-viewer.com/)
 
 ## TODOs
-[ ] Handle toNative:
-```
-<script lang="ts">
-    import { Component, Vue, toNative } from "vue-facing-decorator";
-
-    @Component class QuotationListView extends Vue { }
-    export default toNative(QuotationListView)
-    export { QuotationListView }
-</script>
-```
 
 ### Lower priority TODOs
 [ ] `this.$refs.xyz.focus` -> `const xyz = ref(); ... xyz.value.focus();`

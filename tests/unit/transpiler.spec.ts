@@ -238,4 +238,25 @@ describe('transpiler', () => {
         expect(res).not.toContain('$emit');
         expect(res).not.toContain('this');
     });
+
+    it(`handles vue-facing-decorator style`, () => {
+        const src = `
+        <script>
+            const randomExport = 2;
+
+            class HideSwitch extends Vue {
+                get filterByStatus(): boolean {
+                    return store.getters["\${StoreModule.quotationLineItem}/filterByStatus"] as boolean;
+                }
+
+                get hideOrShow(): boolean | undefined { return this.filterByStatus; } 
+
+                set hideOrShow(value: boolean | undefined) {
+                    store.dispatch("\${StoreModule.quotationLineItem}/\${QuotationLineItemAction.setFilterByStatus}",value);
+                }
+            }
+            export default toNative(HideSwitch)
+            export { HideSwitch }
+        </script>`;
+    });
 });

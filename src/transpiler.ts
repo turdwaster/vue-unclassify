@@ -1,4 +1,4 @@
-import acorn from 'acorn';
+import acorn, { ExportNamedDeclaration } from 'acorn';
 import { applyRecursively, isDecorated, isDecoratedWith, parseTS } from './astTools';
 
 const removeExports = ['vue-property-decorator', 'vue-class-component', 'vue-facing-decorator', ' Vue ', ' Vue, '];
@@ -65,9 +65,20 @@ export function transpile(codeText: string) {
         .map(emitLine);
     emitLine('\n');
 
+    // Try vue-facing-decorator style class def first (class X extends Vue ... export default X)
+    let classNode = code.ast.body.find(x => x.type === 'ClassDeclaration' && x.superClass?.type === 'Identifier' && x.superClass.name === 'Vue') as acorn.ClassDeclaration;
+    if (classNode == null) {
+        // Try old style (export default class X)
+        const expDefNode = code.ast.body.find(x => x.type === 'ExportDefaultDeclaration') as acorn.ExportDefaultDeclaration;
+        if (expDefNode?.declaration?.type === 'ClassDeclaration')
+            classNode = expDefNode?.declaration as acorn.ClassDeclaration;
+    }
+
+    const className = classNode && code.getSource(classNode.id);
+
     // Code outside class
-    const ignoredOutsideTypes = ['EmptyStatement', 'ExportDefaultDeclaration', 'ImportDeclaration'];
-    const outsideCode = code.ast.body.filter(x => !ignoredOutsideTypes.includes(x.type));
+    const ignoredOutsideTypes = ['EmptyStatement', 'ExportDefaultDeclaration', 'ExportNamedDeclaration', 'ImportDeclaration',];
+    const outsideCode = code.ast.body.filter(x => x !== classNode && !ignoredOutsideTypes.includes(x.type));
     if (outsideCode?.length) {
         for (const c of outsideCode) {
             emitComments(c);
@@ -75,14 +86,13 @@ export function transpile(codeText: string) {
         }
     }
 
-    const expDefNode = code.ast.body.find(x => x.type === 'ExportDefaultDeclaration') as acorn.ExportDefaultDeclaration;
-    const classNode = expDefNode?.declaration as acorn.ClassDeclaration;
-    if (!classNode)
+    if (!classNode) {
+        emitSectionHeader('Transpilation failed; could not identify component class node');
         return xformed;
+    }
 
     emitComments(classNode);
 
-    const className = code.getSource(classNode.id);
     const memberNodes = classNode.body.body;
     const properties = memberNodes.filter(x => x.type === 'PropertyDefinition') as acorn.PropertyDefinition[];
 
@@ -263,6 +273,17 @@ export function transpile(codeText: string) {
         for (const { id, node } of staticFunctions) {
             emitComments(node);
             emitLine(`function ${id}${transpiledText(node.value!)}\n`);
+        }
+    }
+
+    // Exports (skip export of Vue class from vue-facing-decorator)
+    const exportNodes = code.ast.body.filter(x => x.type === 'ExportNamedDeclaration')
+        .filter(c => code.getSource((c as ExportNamedDeclaration).specifiers[0]) !== className);
+    if (exportNodes?.length) {
+        emitSectionHeader('Exports');
+        for (const c of exportNodes) {
+            emitComments(c);
+            emitLine(unIndent(code.getSource(c)! + '\n'));
         }
     }
 
