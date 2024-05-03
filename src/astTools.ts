@@ -1,10 +1,24 @@
-import * as acorn from 'acorn';
+import { AnyNode, Comment, Expression, MethodDefinition, Parser, PrivateIdentifier, Program, PropertyDefinition } from 'acorn';
 import { tsPlugin } from 'acorn-typescript';
 
-export function parseTS(code: string) {
-    const parser = acorn.Parser.extend(tsPlugin() as any);
+export interface ParsedCode {
+    ast: Program;
+    getSource: (node: AnyNode | null | undefined) => string | null;
+    deconstructProperty: (node: MethodDefinition | PropertyDefinition) => DeconstructedProperty;
+    asLambda: (node: MethodDefinition | PropertyDefinition) => string | undefined;
+    getCommentsFor: (node: AnyNode | null | undefined) => string;
+}
+
+export interface DeconstructedProperty {
+    id: string;
+    typeStr: any;
+    node: MethodDefinition | PropertyDefinition;
+}
+
+export function parseTS(code: string): ParsedCode {
+    const parser = Parser.extend(tsPlugin() as any);
     try {
-        const comments: acorn.Comment[] = [];
+        const comments: Comment[] = [];
         const ast = parser.parse(code, {
             ecmaVersion: 'latest',
             sourceType: 'module',
@@ -28,7 +42,7 @@ export function parseTS(code: string) {
     }
 }
 
-function mapComments(code: string, comments: acorn.Comment[]) {
+function mapComments(code: string, comments: Comment[]) {
     comments.reverse();
     const lines: { [line: number] : string } = {};
 
@@ -55,17 +69,17 @@ function mapComments(code: string, comments: acorn.Comment[]) {
     return lines;
 }
 
-function getCommentsBefore(code: string, commentLines: { [line: number] : string }, node: acorn.Node | null | undefined) {
+function getCommentsBefore(code: string, commentLines: { [line: number] : string }, node: AnyNode | null | undefined) {
     const line = node?.loc?.start?.line;
     if (!line)
         return '';
     return commentLines[line];
 }
 
-function deconstructProperty(code: string, node: acorn.PropertyDefinition | acorn.MethodDefinition) {
+function deconstructProperty(code: string, node: PropertyDefinition | MethodDefinition) {
     const ta = (node as any)?.typeAnnotation?.typeAnnotation;
     const typeStr =
-        ta?.types?.map((t: acorn.Node) => asSource(code, t)).join(' | ') ??
+        ta?.types?.map((t: AnyNode) => asSource(code, t)).join(' | ') ??
         asSource(code, ta?.elementType)?.concat('[]') ??
         asSource(code, ta?.typeName ?? ta);
     return {
@@ -75,35 +89,35 @@ function deconstructProperty(code: string, node: acorn.PropertyDefinition | acor
     };
 }
 
-function asLambda(code: string, node: acorn.PropertyDefinition | acorn.MethodDefinition) {
-    return asSource(code, node.value)?.replace(') {', ') => {');
+function asLambda(code: string, node: PropertyDefinition | MethodDefinition) {
+    return asSource(code, node?.value)?.replace(') {', ') => {');
 }
 
-function asSource(code: string, node: acorn.Node | null | undefined) {
+function asSource(code: string, node: AnyNode | null | undefined) {
     return node ? code.substring(node.start, node.end) : null;
 }
 
-function identifier(code: string, node: { key: acorn.Expression | acorn.PrivateIdentifier}) {
+function identifier(code: string, node: { key: Expression | PrivateIdentifier}) {
     return code.substring(node.key.start, node.key.end);
 }
 
 // Generic node methods
 
-export function isDecorated(node: acorn.Node) {
+export function isDecorated(node: AnyNode) {
     return (node as any).decorators?.length > 0;
 }
 
-export function isDecoratedWith(node: acorn.Node, name: string) {
+export function isDecoratedWith(node: AnyNode, name: string) {
     const decorators = (node as any).decorators as any[];
     return decorators?.length > 0 && decorators.some((d: any) => d.expression?.callee?.name === name);
 }
 
-export function decorators(node: acorn.Node) {
+export function decorators(node: AnyNode) {
     const decorators = (node as any).decorators as any[];
     return decorators?.length > 0 ? decorators.map((d: any) => d.expression?.callee?.name as string).filter(x => x) : [];
 }
 
-export function applyRecursively(node: acorn.AnyNode, method: (node: acorn.AnyNode) => void) {
+export function applyRecursively(node: AnyNode, method: (node: AnyNode) => void) {
     if (typeof node?.type !== 'string')
         return;
 
@@ -114,8 +128,8 @@ export function applyRecursively(node: acorn.AnyNode, method: (node: acorn.AnyNo
             continue;
         
         if (Array.isArray(value))
-            (value as acorn.AnyNode[]).forEach(el => applyRecursively(el, method));
+            (value as AnyNode[]).forEach(el => applyRecursively(el, method));
         else
-            applyRecursively(value as acorn.AnyNode, method);
+            applyRecursively(value as AnyNode, method);
     }
 }

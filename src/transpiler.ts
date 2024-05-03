@@ -1,4 +1,5 @@
-import acorn, { ExportNamedDeclaration } from 'acorn';
+import { AnyNode, CallExpression, ClassDeclaration, ExportDefaultDeclaration, ExportNamedDeclaration,
+    Expression, Literal, MethodDefinition, PropertyDefinition } from 'acorn';
 import { applyRecursively, isDecorated, isDecoratedWith, parseTS } from './astTools';
 
 const removeExports = ['vue-property-decorator', 'vue-class-component', 'vue-facing-decorator', ' Vue ', ' Vue, '];
@@ -34,7 +35,7 @@ export function transpile(codeText: string) {
 
     const code = parseTS(codeText);
     let xformed = '';
-    const issues: { message: string, node: acorn.AnyNode }[] = [];
+    const issues: { message: string, node: AnyNode }[] = [];
 
     function emitSectionHeader(text: string | null) {
         xformed += `// ${text}\n`;
@@ -49,7 +50,7 @@ export function transpile(codeText: string) {
         }
     }
 
-    function emitComments(node: acorn.Node) {
+    function emitComments(node: AnyNode) {
         let comments = code.getCommentsFor(node);
         if (comments?.length) {
             xformed += '\n';
@@ -61,17 +62,17 @@ export function transpile(codeText: string) {
     emitLine('import { ref, computed, watch, onMounted } from \'vue\'');
     code.ast.body.filter(x => x.type === 'ImportDeclaration')
         .map(code.getSource)
-        .filter(x => !removeExports.some(r => x!.includes(r)))
+        .filter((x: string | null) => !removeExports.some(r => x!.includes(r)))
         .map(emitLine);
     emitLine('\n');
 
     // Try vue-facing-decorator style class def first (class X extends Vue ... export default X)
-    let classNode = code.ast.body.find(x => x.type === 'ClassDeclaration' && x.superClass?.type === 'Identifier' && x.superClass.name === 'Vue') as acorn.ClassDeclaration;
+    let classNode = code.ast.body.find(x => x.type === 'ClassDeclaration' && x.superClass?.type === 'Identifier' && x.superClass.name === 'Vue') as ClassDeclaration;
     if (classNode == null) {
         // Try old style (export default class X)
-        const expDefNode = code.ast.body.find(x => x.type === 'ExportDefaultDeclaration') as acorn.ExportDefaultDeclaration;
+        const expDefNode = code.ast.body.find(x => x.type === 'ExportDefaultDeclaration') as ExportDefaultDeclaration;
         if (expDefNode?.declaration?.type === 'ClassDeclaration')
-            classNode = expDefNode?.declaration as acorn.ClassDeclaration;
+            classNode = expDefNode?.declaration as ClassDeclaration;
     }
 
     const className = classNode && code.getSource(classNode.id);
@@ -94,7 +95,7 @@ export function transpile(codeText: string) {
     emitComments(classNode);
 
     const memberNodes = classNode.body.body;
-    const properties = memberNodes.filter(x => x.type === 'PropertyDefinition') as acorn.PropertyDefinition[];
+    const properties = memberNodes.filter(x => x.type === 'PropertyDefinition') as any as PropertyDefinition[];
 
     // Static non-reactive data (static properties)
     const staticMembers = properties.filter(x => x.static).map(code.deconstructProperty);
@@ -122,7 +123,7 @@ export function transpile(codeText: string) {
 
     // Props
     const props = properties.filter(x => isDecoratedWith(x, 'Prop')).map(code.deconstructProperty);
-    const propIdentifiers: { [id: string]: acorn.Node } = {};
+    const propIdentifiers: { [id: string]: AnyNode } = {};
     if (props?.length) {
         emitSectionHeader('Props');
         emitLine('const props = defineProps({');
@@ -135,12 +136,12 @@ export function transpile(codeText: string) {
     }
 
     // Emits - found by usage
-    const emits: { [id: string]: acorn.Node } = {};
+    const emits: { [id: string]: AnyNode } = {};
     applyRecursively(classNode.body, n => {
         if (n.type === 'CallExpression' && n.callee.type === 'MemberExpression') {
             const name = code.getSource(n.callee.property);
             if (name === '$emit' && n.arguments?.length >= 1) {
-                const eventName = (n.arguments[0] as acorn.Literal).value;
+                const eventName = (n.arguments[0] as Literal).value;
                 if (typeof eventName === 'string' && !emits[eventName])
                     emits[eventName] = n;
                 else
@@ -156,7 +157,7 @@ export function transpile(codeText: string) {
 
     // Refs
     const refs = properties.filter(x => !x.static && !isDecorated(x) && x.value != null).map(code.deconstructProperty);
-    const refIdentifiers: { [id: string]: acorn.Node } = {};
+    const refIdentifiers: { [id: string]: AnyNode } = {};
     if (refs?.length) {
         emitSectionHeader('State');
         for (const { id, typeStr, node } of refs) {
@@ -174,13 +175,13 @@ export function transpile(codeText: string) {
         return code.replace(regex, `$1${prefix ?? ''}${member}${suffix ?? ''}$2`)
     }
 
-    const computedIdentifiers: { [id: string]: acorn.Node } = {};
+    const computedIdentifiers: { [id: string]: AnyNode } = {};
     const staticRefRegexp = new RegExp(`([^a-zA-Z0-9])${className}\\.`, 'g');
     const emitRegexp = new RegExp(`([^a-zA-Z0-9])this\\.\\$emit(\\s?\\()`, 'g');
     const watchRegexp = new RegExp(`([^a-zA-Z0-9])this\\.\\$watch\\s?\\(\\s?['"]([^'"]+)['"]`, 'g');
     const otherMemberRegexp = new RegExp(`([^a-zA-Z0-9])this\\.`, 'g');
 
-    function transpiledText(node: acorn.MethodDefinition | acorn.PropertyDefinition | acorn.Expression) {
+    function transpiledText(node: MethodDefinition | PropertyDefinition | Expression) {
         let bodyText: string;
         if (node.type === 'MethodDefinition' || node.type === 'PropertyDefinition')
             bodyText = code.asLambda(node)!;
@@ -214,7 +215,7 @@ export function transpile(codeText: string) {
         return unIndent(bodyText);
     }
 
-    const methods = memberNodes.filter(x => x.type === 'MethodDefinition') as acorn.MethodDefinition[];
+    const methods = memberNodes.filter(x => x.type === 'MethodDefinition') as MethodDefinition[];
 
     // Computeds
     const computeds = methods.filter(x => !isDecorated(x) && x.kind == 'get').map(code.deconstructProperty);
@@ -232,9 +233,9 @@ export function transpile(codeText: string) {
     if (watches?.length) {
         emitSectionHeader('Watches');
         for (const { node } of watches) {
-            const deco = (node as any).decorators[0].expression as acorn.CallExpression;
-            const decoArg = (deco.arguments[0] as acorn.Literal).value;
-            const decoArg1 = (deco.arguments?.length > 1 ? deco.arguments[1] : null) as acorn.Expression;
+            const deco = (node as any).decorators[0].expression as CallExpression;
+            const decoArg = (deco.arguments[0] as Literal).value;
+            const decoArg1 = (deco.arguments?.length > 1 ? deco.arguments[1] : null) as Expression;
             emitComments(node);
             emitLine(`watch(() => ${decoArg}.value, ${transpiledText(node)}${decoArg1 ? (', ' + code.getSource(decoArg1)) : ''});\n`);
         }
