@@ -1,6 +1,9 @@
-# unclassify
+# vue-unclassify
 
-Generate Vue3 composition SFC from Vue2 class-based SFC.
+Generate Vue3 composition SFC from Vue2/3 class-based single file components.
+
+Usage: `vue-unclassify [-r/--replace] [file patterns...]`
+...or run front end with interactive transpilation (WIP)
 
 ## Useful links
 [AST explorer, many languages etc](https://astexplorer.net/)
@@ -28,20 +31,18 @@ Generate Vue3 composition SFC from Vue2 class-based SFC.
 pnpm install
 ```
 
-### Compiles and hot-reloads for development
+### Run frontend for development
 ```
-pnpm run serve
+pnpm run build-web
+pnpm run dev
 ```
 
-### Compiles and minifies for production
+### Compile and minify CLI
 ```
 pnpm run build
 ```
 
-### Run your unit tests
+### Run unit tests
 ```
-pnpm run test:unit
+pnpm run test
 ```
-
-### Customize configuration
-See [Configuration Reference](https://cli.vuejs.org/config/).

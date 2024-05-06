@@ -27,4 +27,4 @@ if (paths.length) {
             console.log(result);
     }
 } else
-    console.log(`Usage: unclassify [--replace] file names/patterns...`);
+    console.log(`Usage: vue-unclassify [--replace] file names/patterns...`);

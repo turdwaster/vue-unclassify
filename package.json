@@ -1,20 +1,31 @@
 {
-  "name": "unclassify",
-  "version": "0.1.0",
-  "description": "Create Vue 3 script setup SFC from Vue class based SFC",
-  "main": "bin/index.js",
-  "keywords": [
-    "vue"
+  "name": "vue-unclassify",
+  "version": "0.2.0",
+  "description": "Create Vue 3 script setup SFC from Vue2/3 class based SFCs",
+  "main": "./bin/index.js",
+  "files": [
+      "bin"
   ],
-  "author": "Per Lindén",
-  "license": "ISC",
+  "keywords": [
+    "vue",
+    "vue2",
+    "vue3",
+    "composition",
+    "script setup",
+    "sfc",
+    "vue-facing-decorator",
+    "vue-class-component",
+    "vue-property-decorator"
+  ],
+  "author": "Per Lindén <turdwaster@gmail.com> (https://github.com/turdwaster/)",
+  "license": "MIT",
   "scripts": {
     "dev": "vite",
     "build-web": "vite build",
     "tsc-version": "tsc --version",
-    "build-cli": "tsc --skipLibCheck --moduleResolution node --outDir bin src/transpiler.ts src/astTools.ts index.ts",
+    "build": "tsc --skipLibCheck --moduleResolution node --outDir bin src/transpiler.ts src/astTools.ts index.ts",
     "serve": "vite preview",
-    "test:unit": "vite-jest",
+    "test": "vite-jest",
     "test:watch": "vite-jest --watch"
   },
   "dependencies": {
