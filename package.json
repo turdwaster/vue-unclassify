@@ -1,11 +1,14 @@
 {
-  "name": "vue-unclassify",
+  "name": "@linden.dev/vue-unclassify",
   "version": "0.2.0",
   "description": "Create Vue 3 script setup SFC from Vue2/3 class based SFCs",
-  "main": "./bin/index.js",
-  "files": [
-      "bin"
-  ],
+  "main": "bin/index.js",
+  "bin": {
+    "vue-unclassify": "bin/index.js"
+  },
+  "directories": {
+    "bin": "bin"
+  },
   "keywords": [
     "vue",
     "vue2",
@@ -17,7 +20,7 @@
     "vue-class-component",
     "vue-property-decorator"
   ],
-  "author": "Per Lindén <turdwaster@gmail.com> (https://github.com/turdwaster/)",
+  "author": "Per Lindén <per@linden.dev> (https://github.com/turdwaster/)",
   "license": "MIT",
   "scripts": {
     "dev": "vite",
