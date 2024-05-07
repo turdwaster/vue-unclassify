@@ -15,7 +15,8 @@
 
 <script setup lang="ts">
 	import { ref, watch } from 'vue';
-	import { splitSFC, transpile } from '../transpiler';
+	import { transpile } from '../transpiler';
+	import { splitSFC } from '../sfc';
 	import hljs from 'highlight.js/lib/core';
 	import typescript from 'highlight.js/lib/languages/typescript';
 	import 'highlight.js/styles/atom-one-dark.min.css';

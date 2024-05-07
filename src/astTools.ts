@@ -133,3 +133,21 @@ export function applyRecursively(node: AnyNode, method: (node: AnyNode) => void)
             applyRecursively(value as AnyNode, method);
     }
 }
+
+const indentRegex = /^([ \t]+)(?:[^\s]|$)/;
+
+export function unIndent(bodyText: string) {
+    let lines = bodyText.split('\n');
+    if (lines.length > 1) {
+        let minIndent: string | null = null;
+        for (const line of lines) {
+            const lineIndent = indentRegex.exec(line)?.[1];
+            if (lineIndent?.length && (minIndent == null || lineIndent.length < minIndent.length))
+                minIndent = lineIndent;
+        }
+
+        if (minIndent?.length)
+            bodyText = lines.map(l => l.replace(minIndent!, '')).join('\n');
+    }
+    return bodyText;
+}

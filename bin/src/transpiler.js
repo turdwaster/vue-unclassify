@@ -1,53 +1,8 @@
 "use strict";
 exports.__esModule = true;
-exports.transpile = exports.transpileSFC = exports.joinSFC = exports.splitSFC = void 0;
+exports.transpile = void 0;
 var astTools_1 = require("./astTools");
 var removeExports = ['vue-property-decorator', 'vue-class-component', 'vue-facing-decorator', ' Vue ', ' Vue, '];
-function splitSFC(text) {
-    var scriptNode = extractTag(text, 'script');
-    var scriptBody = undefined;
-    if (scriptNode) {
-        var start = scriptNode.indexOf('>') + 1;
-        var end = scriptNode.lastIndexOf('</');
-        if (start > 0 && end > start)
-            scriptBody = scriptNode.substring(start, end);
-    }
-    return {
-        templateNode: extractTag(text, 'template'),
-        scriptNode: scriptNode,
-        scriptBody: scriptBody,
-        styleNode: extractTag(text, 'style')
-    };
-}
-exports.splitSFC = splitSFC;
-function joinSFC(sfc) {
-    var _a, _b, _c;
-    var result = '';
-    if ((_a = sfc.templateNode) === null || _a === void 0 ? void 0 : _a.length)
-        result += "".concat(sfc.templateNode, "\n\n");
-    if ((_b = sfc.scriptBody) === null || _b === void 0 ? void 0 : _b.length)
-        result += "".concat(sfc.scriptNode, "\n\n");
-    if ((_c = sfc.styleNode) === null || _c === void 0 ? void 0 : _c.length)
-        result += sfc.styleNode;
-    return result;
-}
-exports.joinSFC = joinSFC;
-function transpileSFC(source) {
-    var _a, _b;
-    var sfc = splitSFC(source);
-    if (((_a = sfc.scriptBody) === null || _a === void 0 ? void 0 : _a.length) && !((_b = sfc.scriptNode) === null || _b === void 0 ? void 0 : _b.includes('<script setup'))) {
-        sfc.scriptBody = transpile(sfc.scriptBody);
-        sfc.scriptNode = "<script setup lang=\"ts\">\n".concat(sfc.scriptBody.trimEnd(), "\n</script>");
-    }
-    return joinSFC(sfc);
-}
-exports.transpileSFC = transpileSFC;
-function extractTag(data, tagName) {
-    var start = data.indexOf("<".concat(tagName));
-    var endTag = "</".concat(tagName, ">");
-    var end = data.lastIndexOf(endTag);
-    return start >= 0 && end > start ? data.substring(start, end + endTag.length) : undefined;
-}
 function transpile(codeText) {
     var _a, _b;
     // Fixup: interface before @Component -> syntax error
@@ -96,7 +51,7 @@ function transpile(codeText) {
         for (var _i = 0, outsideCode_1 = outsideCode; _i < outsideCode_1.length; _i++) {
             var c = outsideCode_1[_i];
             emitComments(c);
-            emitLine(unIndent(code.getSource(c) + '\n'));
+            emitLine((0, astTools_1.unIndent)(code.getSource(c) + '\n'));
         }
     }
     if (!classNode) {
@@ -113,7 +68,7 @@ function transpile(codeText) {
         for (var _c = 0, staticMembers_1 = staticMembers; _c < staticMembers_1.length; _c++) {
             var _d = staticMembers_1[_c], id = _d.id, typeStr = _d.typeStr, node = _d.node;
             emitComments(node);
-            var initializer = node.value != null ? ' = ' + unIndent(code.getSource(node.value)) : '';
+            var initializer = node.value != null ? ' = ' + (0, astTools_1.unIndent)(code.getSource(node.value)) : '';
             emitLine("const ".concat(id).concat(typeStr ? ': ' + typeStr : '').concat(initializer, ";"));
         }
         emitLine('\n');
@@ -216,7 +171,7 @@ function transpile(codeText) {
         bodyText = bodyText.replace(staticRefRegexp, '$1');
         // this.[other member] -> [other member]
         bodyText = bodyText.replace(otherMemberRegexp, '$1');
-        return unIndent(bodyText);
+        return (0, astTools_1.unIndent)(bodyText);
     }
     var methods = memberNodes.filter(function (x) { return x.type === 'MethodDefinition'; });
     // Computeds
@@ -256,7 +211,7 @@ function transpile(codeText) {
             var _q = specialFunctions_1[_p], id = _q.id, node = _q.node;
             emitComments(node);
             if (id == 'created')
-                emitLine(unIndent(transpiledText(node.value.body)).slice(2, -3) + '\n');
+                emitLine((0, astTools_1.unIndent)(transpiledText(node.value.body)).slice(2, -3) + '\n');
             else if (id == 'mounted')
                 emitLine("onMounted(".concat(transpiledText(node), ");\n"));
         }
@@ -295,7 +250,7 @@ function transpile(codeText) {
         for (var _v = 0, exportNodes_1 = exportNodes; _v < exportNodes_1.length; _v++) {
             var c = exportNodes_1[_v];
             emitComments(c);
-            emitLine(unIndent(code.getSource(c) + '\n'));
+            emitLine((0, astTools_1.unIndent)(code.getSource(c) + '\n'));
         }
     }
     if (issues === null || issues === void 0 ? void 0 : issues.length) {
@@ -305,20 +260,3 @@ function transpile(codeText) {
     return xformed;
 }
 exports.transpile = transpile;
-var indentRegex = /^([ \t]+)(?:[^\s]|$)/;
-function unIndent(bodyText) {
-    var _a;
-    var lines = bodyText.split('\n');
-    if (lines.length > 1) {
-        var minIndent_1 = null;
-        for (var _i = 0, lines_1 = lines; _i < lines_1.length; _i++) {
-            var line = lines_1[_i];
-            var lineIndent = (_a = indentRegex.exec(line)) === null || _a === void 0 ? void 0 : _a[1];
-            if ((lineIndent === null || lineIndent === void 0 ? void 0 : lineIndent.length) && (minIndent_1 == null || lineIndent.length < minIndent_1.length))
-                minIndent_1 = lineIndent;
-        }
-        if (minIndent_1 === null || minIndent_1 === void 0 ? void 0 : minIndent_1.length)
-            bodyText = lines.map(function (l) { return l.replace(minIndent_1, ''); }).join('\n');
-    }
-    return bodyText;
-}

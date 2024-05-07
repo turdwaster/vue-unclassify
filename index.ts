@@ -1,5 +1,5 @@
 #! /usr/bin/env node
-import { transpileSFC } from './src/transpiler';
+import { transpileSFC } from './src/sfc';
 import { readFileSync, writeFileSync } from 'fs';
 import { parseArgs } from 'node:util';
 import { globSync } from 'glob';

@@ -1,4 +1,4 @@
-import { splitSFC } from '@/transpiler';
+import { splitSFC } from '@/sfc';
 import { toMatchFile } from 'jest-file-snapshot';
 import { readVueFile, vueFiles, vueFilesWithoutStyle } from './testUtils';
  

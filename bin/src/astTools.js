@@ -1,6 +1,6 @@
 "use strict";
 exports.__esModule = true;
-exports.applyRecursively = exports.decorators = exports.isDecoratedWith = exports.isDecorated = exports.parseTS = void 0;
+exports.unIndent = exports.applyRecursively = exports.decorators = exports.isDecoratedWith = exports.isDecorated = exports.parseTS = void 0;
 var acorn_1 = require("acorn");
 var acorn_typescript_1 = require("acorn-typescript");
 function parseTS(code) {
@@ -113,3 +113,21 @@ function applyRecursively(node, method) {
     }
 }
 exports.applyRecursively = applyRecursively;
+var indentRegex = /^([ \t]+)(?:[^\s]|$)/;
+function unIndent(bodyText) {
+    var _a;
+    var lines = bodyText.split('\n');
+    if (lines.length > 1) {
+        var minIndent_1 = null;
+        for (var _i = 0, lines_1 = lines; _i < lines_1.length; _i++) {
+            var line = lines_1[_i];
+            var lineIndent = (_a = indentRegex.exec(line)) === null || _a === void 0 ? void 0 : _a[1];
+            if ((lineIndent === null || lineIndent === void 0 ? void 0 : lineIndent.length) && (minIndent_1 == null || lineIndent.length < minIndent_1.length))
+                minIndent_1 = lineIndent;
+        }
+        if (minIndent_1 === null || minIndent_1 === void 0 ? void 0 : minIndent_1.length)
+            bodyText = lines.map(function (l) { return l.replace(minIndent_1, ''); }).join('\n');
+    }
+    return bodyText;
+}
+exports.unIndent = unIndent;
