@@ -33,7 +33,7 @@ Usage: `vue-unclassify [-r/--replace] [file patterns...]`
 [AST viewer for TypeScript (not ESTree format?)](https://ts-ast-viewer.com/)
 
 ## TODOs
-[ ] Report that no files match input pattern
+[ ] Propagate errors to stdout instead of dumping them in the script tag
 
 [ ] Transpile `$emit` in `template`
 
