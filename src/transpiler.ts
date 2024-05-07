@@ -149,15 +149,13 @@ export function transpile(codeText: string) {
 
     // function/lambda body transpilation
 
-    function replaceThisExpr(code: string, member: string, prefix?: string, suffix?: string) {
+    function replaceThisExpr(code: string, member: string, prefix?: string, newName?: string | null, suffix?: string) {
         const regex = new RegExp(`([^a-zA-Z0-9])this\\.${member}([^a-zA-Z0-9])`, 'g');
-        return code.replace(regex, `$1${prefix ?? ''}${member}${suffix ?? ''}$2`)
+        return code.replace(regex, `$1${prefix ?? ''}${newName ?? member}${suffix ?? ''}$2`)
     }
 
     const computedIdentifiers: { [id: string]: AnyNode } = {};
     const staticRefRegexp = new RegExp(`([^a-zA-Z0-9])${className}\\.`, 'g');
-    const emitRegexp = new RegExp(`([^a-zA-Z0-9])this\\.\\$emit(\\s?\\()`, 'g');
-    const nextTickRegexp = new RegExp(`([^a-zA-Z0-9])this\\.\\$nextTick(\\s?\\()`, 'g');
     const watchRegexp = new RegExp(`([^a-zA-Z0-9])this\\.\\$watch\\s?\\(\\s?['"]([^'"]+)['"]`, 'g');
     const otherMemberRegexp = new RegExp(`([^a-zA-Z0-9])this\\.`, 'g');
 
@@ -177,17 +175,17 @@ export function transpile(codeText: string) {
 
         // this.[observable] -> [observable].value
         for (const prop of Object.keys(refIdentifiers))
-            bodyText = replaceThisExpr(bodyText, prop, '', '.value');
+            bodyText = replaceThisExpr(bodyText, prop, '', null, '.value');
 
         // this.[computed] -> [computed].value
         for (const prop of Object.keys(computedIdentifiers))
-            bodyText = replaceThisExpr(bodyText, prop, '', '.value');
+            bodyText = replaceThisExpr(bodyText, prop, '', null, '.value');
 
         // this.$emit(ev, ...) -> emit(ev, ...)
-        bodyText = bodyText.replace(emitRegexp, '$1emit$2');
+        bodyText = replaceThisExpr(bodyText, '\\$emit', '', 'emit');
 
         // this.$nextTick(...) -> nextTick(ev, ...)
-        bodyText = bodyText.replace(nextTickRegexp, '$1nextTick$2');
+        bodyText = replaceThisExpr(bodyText, '\\$nextTick', '', 'nextTick');
 
         // <className>.method/property (static member reference)
         bodyText = bodyText.replace(staticRefRegexp, '$1');
