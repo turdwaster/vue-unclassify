@@ -1,6 +1,6 @@
 # vue-unclassify
 
-Generate Vue3 TypeScript composition SFC from Vue2/3 class-based single file TypeScript components. Can also be used to convert `vue-facing-decorator` classes to `<script setup>`.
+Generate Vue3 TypeScript `<script setup>` SFCs directly from Vue2/3 class-based single file TypeScript components. Can also be used to convert `vue-facing-decorator` classes to `<script setup>`.
 
 This is very much an opinionated **alpha** version that only attempts to transform the `<script>` element of an SFC. There are surely heaps of bugs.
 
