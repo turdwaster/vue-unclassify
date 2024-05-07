@@ -258,7 +258,7 @@ function valueChange() {
 		// being set to `text` since the component requires item-value to be unique and removes those with the
 		// same values otherwise.
 		if (value.value !== value)
-			$nextTick(() => value.value = selectedPreset(value) || value);
+			nextTick(() => value.value = selectedPreset(value) || value);
 	}
 	enteredValue.value = value;
 	enteredUnit.value = unitValue.value.unit;
@@ -274,6 +274,6 @@ function valueChange() {
 
 function pulseEvent(name: string) {
 	(this as any)[name] = true;
-	$nextTick(() => (this as any)[name] = false);
+	nextTick(() => (this as any)[name] = false);
 }
 

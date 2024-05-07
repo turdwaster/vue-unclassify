@@ -157,6 +157,7 @@ export function transpile(codeText: string) {
     const computedIdentifiers: { [id: string]: AnyNode } = {};
     const staticRefRegexp = new RegExp(`([^a-zA-Z0-9])${className}\\.`, 'g');
     const emitRegexp = new RegExp(`([^a-zA-Z0-9])this\\.\\$emit(\\s?\\()`, 'g');
+    const nextTickRegexp = new RegExp(`([^a-zA-Z0-9])this\\.\\$nextTick(\\s?\\()`, 'g');
     const watchRegexp = new RegExp(`([^a-zA-Z0-9])this\\.\\$watch\\s?\\(\\s?['"]([^'"]+)['"]`, 'g');
     const otherMemberRegexp = new RegExp(`([^a-zA-Z0-9])this\\.`, 'g');
 
@@ -184,6 +185,9 @@ export function transpile(codeText: string) {
 
         // this.$emit(ev, ...) -> emit(ev, ...)
         bodyText = bodyText.replace(emitRegexp, '$1emit$2');
+
+        // this.$nextTick(...) -> nextTick(ev, ...)
+        bodyText = bodyText.replace(nextTickRegexp, '$1nextTick$2');
 
         // <className>.method/property (static member reference)
         bodyText = bodyText.replace(staticRefRegexp, '$1');

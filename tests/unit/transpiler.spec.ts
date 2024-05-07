@@ -240,6 +240,15 @@ describe('transpiler', () => {
         expect(res).not.toContain('this');
     });
 
+    it(`transpiles $nextTick statements`, () => {
+        const src = makeClass(`public pulseEvent(name: string) { this.$nextTick(() => (this as any)[name] = false); }`);
+
+        const res = transpile(src);
+        expect(res).toContain('nextTick(() => (this as any)[name] = false');
+        expect(res).not.toContain('$nextTick');
+        expect(res).not.toContain('this.');
+    });
+
     it(`handles vue-facing-decorator style`, () => {
         const src = `
         <script>
