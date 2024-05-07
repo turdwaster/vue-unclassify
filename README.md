@@ -10,41 +10,52 @@ The resulting script is always reordered as
     ... (unchanged as of now)
 </template>
 <script setup>
-  // Static/non-class/non reactive code
-  // Props
-  // Emits
-  // State (ref:s)
-  // Computeds
-  // Watches
-  // Initialization (onMounted et al)
-  // Functions (former member methods)
-  // Exports (other than default Vue class)
+    // Static/non-class/non reactive code
+    // Props
+    // Emits
+    // State (ref:s)
+    // Computeds
+    // Watches
+    // Initialization (onMounted et al)
+    // Functions (former member methods)
+    // Exports (other than default Vue class)
 </script>
 <style>
    ... (as-is)
 </style>
 ```
 
-Usage: `vue-unclassify [-r/--replace] [file patterns...]`
+## Usage
+`vue-unclassify [-r/--replace] [file patterns...]`
 ...or run front end with interactive transpilation (WIP)
+
+## Features
+* AST-based transpilation (90%) using `acorn` - a lot less fragile than existing RegEx tools
+* Direct conversion to `<script setup>`
+* Attempts to retain style/comments
 
 ## Useful links
 [AST explorer, many languages etc](https://astexplorer.net/)
-[AST viewer for TypeScript (not ESTree format?)](https://ts-ast-viewer.com/)
 
 ## TODOs
 [ ] Propagate errors to stdout instead of dumping them in the script tag
 
 [ ] Transpile `$emit` in `template`
 
+[ ] Transpile writable computeds (`set` methods)
+
+[ ] Improve lambda body extraction (remove .substring hack)
+
 ### Lower priority TODOs
 [ ] `this.$refs.xyz.focus` -> `const xyz = ref(); ... xyz.value.focus();`
 
 [ ] `computed(..., () => { \n* return y.value; \n* });` -> `computed(..., () => y.value);`
 
-[ ] For readonly members (`public readonly CUT: LengthType = 'Custom';`) -> skip ref()
+[ ] For readonly members (`public readonly CUT: LengthType = 'Custom';`) -> skip the `ref()`
 
-[ ] Multiple script/style sections?
+[ ] Handle multiple script/style sections (passthrough)
+
+[ ] Refactor to allow custom section ordering/templates instead of hardcoded tag/script order
 
 [ ] Resolve import name clashes (rename all locals if an imported name matched)
 ```
