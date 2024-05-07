@@ -10,15 +10,15 @@ The resulting script is always reordered as
     ... (unchanged as of now)
 </template>
 <script setup>
-    // Static/non-class/non reactive code
-    // Props
-    // Emits
-    // State (ref:s)
-    // Computeds
-    // Watches
-    // Initialization (onMounted et al)
-    // Functions (former member methods)
-    // Exports (other than default Vue class)
+  // Static/non-class/non reactive code
+  // Props
+  // Emits
+  // State (ref:s)
+  // Computeds
+  // Watches
+  // Initialization (onMounted et al)
+  // Functions (former member methods)
+  // Exports (other than default Vue class)
 </script>
 <style>
    ... (as-is)
@@ -39,8 +39,6 @@ The resulting script is always reordered as
 
 ## TODOs
 [ ] Propagate errors to stdout instead of dumping them in the script tag
-
-[ ] Transpile `$emit` in `template`
 
 [ ] Transpile writable computeds (`set` methods)
 

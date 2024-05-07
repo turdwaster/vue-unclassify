@@ -1,8 +1,10 @@
 "use strict";
 exports.__esModule = true;
 exports.transpileSFC = exports.joinSFC = exports.splitSFC = void 0;
+var astTools_1 = require("./astTools");
 var transpiler_1 = require("./transpiler");
 function splitSFC(text) {
+    var newLine = (0, astTools_1.getNewLine)(text);
     var scriptNode = extractTag(text, 'script');
     var scriptBody = undefined;
     if (scriptNode) {
@@ -15,7 +17,8 @@ function splitSFC(text) {
         templateNode: extractTag(text, 'template'),
         scriptNode: scriptNode,
         scriptBody: scriptBody,
-        styleNode: extractTag(text, 'style')
+        styleNode: extractTag(text, 'style'),
+        newLine: newLine
     };
 }
 exports.splitSFC = splitSFC;
@@ -23,21 +26,23 @@ function joinSFC(sfc) {
     var _a, _b, _c;
     var result = '';
     if ((_a = sfc.templateNode) === null || _a === void 0 ? void 0 : _a.length)
-        result += "".concat(sfc.templateNode, "\n\n");
+        result += "".concat(sfc.templateNode).concat(sfc.newLine).concat(sfc.newLine);
     if ((_b = sfc.scriptBody) === null || _b === void 0 ? void 0 : _b.length)
-        result += "".concat(sfc.scriptNode, "\n\n");
+        result += "".concat(sfc.scriptNode).concat(sfc.newLine).concat(sfc.newLine);
     if ((_c = sfc.styleNode) === null || _c === void 0 ? void 0 : _c.length)
         result += sfc.styleNode;
     return result;
 }
 exports.joinSFC = joinSFC;
 function transpileSFC(source) {
-    var _a, _b;
+    var _a, _b, _c;
     var sfc = splitSFC(source);
     if (((_a = sfc.scriptBody) === null || _a === void 0 ? void 0 : _a.length) && !((_b = sfc.scriptNode) === null || _b === void 0 ? void 0 : _b.includes('<script setup'))) {
         sfc.scriptBody = (0, transpiler_1.transpile)(sfc.scriptBody);
-        sfc.scriptNode = "<script setup lang=\"ts\">\n".concat(sfc.scriptBody.trimEnd(), "\n</script>");
+        sfc.scriptNode = "<script setup lang=\"ts\">".concat(sfc.newLine).concat(sfc.scriptBody.trimEnd()).concat(sfc.newLine, "</script>");
     }
+    if ((_c = sfc.templateNode) === null || _c === void 0 ? void 0 : _c.length)
+        sfc.templateNode = (0, transpiler_1.transpileTemplate)(sfc.templateNode);
     return joinSFC(sfc);
 }
 exports.transpileSFC = transpileSFC;

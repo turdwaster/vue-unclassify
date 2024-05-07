@@ -1,10 +1,11 @@
 "use strict";
 exports.__esModule = true;
-exports.unIndent = exports.applyRecursively = exports.decorators = exports.isDecoratedWith = exports.isDecorated = exports.parseTS = void 0;
+exports.unIndent = exports.applyRecursively = exports.decorators = exports.isDecoratedWith = exports.isDecorated = exports.getNewLine = exports.parseTS = void 0;
 var acorn_1 = require("acorn");
 var acorn_typescript_1 = require("acorn-typescript");
 function parseTS(code) {
     var _a, _b;
+    var newLine = getNewLine(code);
     var parser = acorn_1.Parser.extend((0, acorn_typescript_1.tsPlugin)());
     try {
         var comments = [];
@@ -14,24 +15,30 @@ function parseTS(code) {
             onComment: comments,
             locations: true // Required for acorn-typescript
         });
-        var commentLines = mapComments(code, comments);
+        var commentLines = mapComments(code, newLine, comments);
         return {
             ast: ast,
             getSource: asSource.bind(null, code),
             deconstructProperty: deconstructProperty.bind(null, code),
             asLambda: asLambda.bind(null, code),
-            getCommentsFor: getCommentsBefore.bind(null, code, commentLines)
+            getCommentsFor: getCommentsBefore.bind(null, code, commentLines),
+            unIndent: unIndent.bind(null, code, newLine),
+            newLine: newLine
         };
     }
     catch (ex) {
         var msg = '// Transpilation failure - ' + ((_a = ex === null || ex === void 0 ? void 0 : ex.message) !== null && _a !== void 0 ? _a : JSON.stringify(ex));
         if ((_b = ex.loc) === null || _b === void 0 ? void 0 : _b.line)
-            msg += '\n' + (code === null || code === void 0 ? void 0 : code.split('\n').slice(ex.loc.line - 1, ex.loc.line));
+            msg += newLine + (code === null || code === void 0 ? void 0 : code.split(newLine).slice(ex.loc.line - 1, ex.loc.line));
         throw new Error(msg);
     }
 }
 exports.parseTS = parseTS;
-function mapComments(code, comments) {
+function getNewLine(code) {
+    return code.includes('\x0d\x0a') ? '\x0d\x0a' : '\x0a';
+}
+exports.getNewLine = getNewLine;
+function mapComments(code, newLine, comments) {
     var _a;
     comments.reverse();
     var lines = {};
@@ -50,8 +57,8 @@ function mapComments(code, comments) {
         if (lines[line + 1])
             line++;
         var prefix = c.type === 'Block' ? '/*' : '//';
-        var suffix = c.type === 'Block' ? '*/\n' : '\n';
-        lines[line] = prefix + c.value + suffix + ((_a = lines[line]) !== null && _a !== void 0 ? _a : '');
+        var suffix = c.type === 'Block' ? '*/' : '';
+        lines[line] = "".concat(prefix).concat(c.value).concat(suffix).concat(newLine).concat((_a = lines[line]) !== null && _a !== void 0 ? _a : '');
     }
     return lines;
 }
@@ -114,9 +121,9 @@ function applyRecursively(node, method) {
 }
 exports.applyRecursively = applyRecursively;
 var indentRegex = /^([ \t]+)(?:[^\s]|$)/;
-function unIndent(bodyText) {
+function unIndent(code, newLine, bodyText) {
     var _a;
-    var lines = bodyText.split('\n');
+    var lines = bodyText.split(newLine);
     if (lines.length > 1) {
         var minIndent_1 = null;
         for (var _i = 0, lines_1 = lines; _i < lines_1.length; _i++) {
@@ -126,7 +133,7 @@ function unIndent(bodyText) {
                 minIndent_1 = lineIndent;
         }
         if (minIndent_1 === null || minIndent_1 === void 0 ? void 0 : minIndent_1.length)
-            bodyText = lines.map(function (l) { return l.replace(minIndent_1, ''); }).join('\n');
+            bodyText = lines.map(function (l) { return l.replace(minIndent_1, ''); }).join(newLine);
     }
     return bodyText;
 }

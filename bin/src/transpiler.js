@@ -1,8 +1,12 @@
 "use strict";
 exports.__esModule = true;
-exports.transpile = void 0;
+exports.transpile = exports.transpileTemplate = void 0;
 var astTools_1 = require("./astTools");
 var removeExports = ['vue-property-decorator', 'vue-class-component', 'vue-facing-decorator', ' Vue ', ' Vue, '];
+function transpileTemplate(codeText) {
+    return codeText.replace(/\$emit\s?\(/g, 'emit(');
+}
+exports.transpileTemplate = transpileTemplate;
 function transpile(codeText) {
     var _a, _b;
     // Fixup: interface before @Component -> syntax error
@@ -11,20 +15,22 @@ function transpile(codeText) {
     var xformed = '';
     var issues = [];
     function emitSectionHeader(text) {
-        xformed += "// ".concat(text, "\n");
+        emitLine("// ".concat(text));
     }
     function emitLine(text) {
-        if (text === null || text === void 0 ? void 0 : text.length) {
-            if (text === '\n')
-                xformed += text;
-            else
-                xformed += "".concat(text, "\n");
+        var _a;
+        if ((_a = text === null || text === void 0 ? void 0 : text.trim()) === null || _a === void 0 ? void 0 : _a.length) {
+            xformed += text;
+            emitNewLine();
         }
+    }
+    function emitNewLine() {
+        xformed += code.newLine;
     }
     function emitComments(node) {
         var comments = code.getCommentsFor(node);
         if (comments === null || comments === void 0 ? void 0 : comments.length) {
-            xformed += '\n';
+            emitNewLine();
             xformed += comments;
         }
     }
@@ -34,7 +40,7 @@ function transpile(codeText) {
         .map(code.getSource)
         .filter(function (x) { return !removeExports.some(function (r) { return x.includes(r); }); })
         .map(emitLine);
-    emitLine('\n');
+    emitNewLine();
     // Try vue-facing-decorator style class def first (class X extends Vue ... export default X)
     var classNode = code.ast.body.find(function (x) { var _a; return x.type === 'ClassDeclaration' && ((_a = x.superClass) === null || _a === void 0 ? void 0 : _a.type) === 'Identifier' && x.superClass.name === 'Vue'; });
     if (classNode == null) {
@@ -51,7 +57,8 @@ function transpile(codeText) {
         for (var _i = 0, outsideCode_1 = outsideCode; _i < outsideCode_1.length; _i++) {
             var c = outsideCode_1[_i];
             emitComments(c);
-            emitLine((0, astTools_1.unIndent)(code.getSource(c) + '\n'));
+            emitLine(code.unIndent(code.getSource(c)));
+            emitNewLine();
         }
     }
     if (!classNode) {
@@ -68,10 +75,10 @@ function transpile(codeText) {
         for (var _c = 0, staticMembers_1 = staticMembers; _c < staticMembers_1.length; _c++) {
             var _d = staticMembers_1[_c], id = _d.id, typeStr = _d.typeStr, node = _d.node;
             emitComments(node);
-            var initializer = node.value != null ? ' = ' + (0, astTools_1.unIndent)(code.getSource(node.value)) : '';
+            var initializer = node.value != null ? ' = ' + code.unIndent(code.getSource(node.value)) : '';
             emitLine("const ".concat(id).concat(typeStr ? ': ' + typeStr : '').concat(initializer, ";"));
         }
-        emitLine('\n');
+        emitNewLine();
     }
     // Static non-reactive data (uninitialized instance properties)
     var nonReactiveMembers = properties.filter(function (x) { return !x.static && !(0, astTools_1.isDecorated)(x) && x.value == null; }).map(code.deconstructProperty);
@@ -83,7 +90,7 @@ function transpile(codeText) {
             emitComments(node);
             emitLine("let ".concat(id).concat(typeStr ? ': ' + typeStr : '', ";"));
         }
-        emitLine('\n');
+        emitNewLine();
     }
     // Props
     var props = properties.filter(function (x) { return (0, astTools_1.isDecoratedWith)(x, 'Prop'); }).map(code.deconstructProperty);
@@ -97,7 +104,8 @@ function transpile(codeText) {
             emitComments(node);
             emitLine("\t".concat(id).concat(typeStr ? ': ' + typeStr : '').concat(node.value != null ? ' = ' + code.getSource(node.value) : '', ","));
         }
-        emitLine('});\n');
+        emitLine('});');
+        emitNewLine();
     }
     // Emits - found by usage
     var emits = {};
@@ -117,7 +125,7 @@ function transpile(codeText) {
     var emitNames = Object.keys(emits);
     if (emitNames.length) {
         emitSectionHeader('Emits');
-        emitLine("const emit = defineEmits(['".concat(emitNames.join('\', \''), "']);\n"));
+        emitLine("const emit = defineEmits(['".concat(emitNames.join('\', \''), "']);"));
     }
     // Refs
     var refs = properties.filter(function (x) { return !x.static && !(0, astTools_1.isDecorated)(x) && x.value != null; }).map(code.deconstructProperty);
@@ -130,16 +138,15 @@ function transpile(codeText) {
             emitComments(node);
             emitLine("const ".concat(id, " = ref").concat(typeStr ? ("<".concat(typeStr, ">")) : '', "(").concat(code.getSource(node.value), ");"));
         }
-        emitLine('\n');
+        emitNewLine();
     }
     // function/lambda body transpilation
-    function replaceThisExpr(code, member, prefix, suffix) {
+    function replaceThisExpr(code, member, prefix, newName, suffix) {
         var regex = new RegExp("([^a-zA-Z0-9])this\\.".concat(member, "([^a-zA-Z0-9])"), 'g');
-        return code.replace(regex, "$1".concat(prefix !== null && prefix !== void 0 ? prefix : '').concat(member).concat(suffix !== null && suffix !== void 0 ? suffix : '', "$2"));
+        return code.replace(regex, "$1".concat(prefix !== null && prefix !== void 0 ? prefix : '').concat(newName !== null && newName !== void 0 ? newName : member).concat(suffix !== null && suffix !== void 0 ? suffix : '', "$2"));
     }
     var computedIdentifiers = {};
     var staticRefRegexp = new RegExp("([^a-zA-Z0-9])".concat(className, "\\."), 'g');
-    var emitRegexp = new RegExp("([^a-zA-Z0-9])this\\.\\$emit(\\s?\\()", 'g');
     var watchRegexp = new RegExp("([^a-zA-Z0-9])this\\.\\$watch\\s?\\(\\s?['\"]([^'\"]+)['\"]", 'g');
     var otherMemberRegexp = new RegExp("([^a-zA-Z0-9])this\\.", 'g');
     function transpiledText(node) {
@@ -158,20 +165,22 @@ function transpile(codeText) {
         // this.[observable] -> [observable].value
         for (var _b = 0, _c = Object.keys(refIdentifiers); _b < _c.length; _b++) {
             var prop = _c[_b];
-            bodyText = replaceThisExpr(bodyText, prop, '', '.value');
+            bodyText = replaceThisExpr(bodyText, prop, '', null, '.value');
         }
         // this.[computed] -> [computed].value
         for (var _d = 0, _e = Object.keys(computedIdentifiers); _d < _e.length; _d++) {
             var prop = _e[_d];
-            bodyText = replaceThisExpr(bodyText, prop, '', '.value');
+            bodyText = replaceThisExpr(bodyText, prop, '', null, '.value');
         }
         // this.$emit(ev, ...) -> emit(ev, ...)
-        bodyText = bodyText.replace(emitRegexp, '$1emit$2');
+        bodyText = replaceThisExpr(bodyText, '\\$emit', '', 'emit');
+        // this.$nextTick(...) -> nextTick(ev, ...)
+        bodyText = replaceThisExpr(bodyText, '\\$nextTick', '', 'nextTick');
         // <className>.method/property (static member reference)
         bodyText = bodyText.replace(staticRefRegexp, '$1');
         // this.[other member] -> [other member]
         bodyText = bodyText.replace(otherMemberRegexp, '$1');
-        return (0, astTools_1.unIndent)(bodyText);
+        return code.unIndent(bodyText);
     }
     var methods = memberNodes.filter(function (x) { return x.type === 'MethodDefinition'; });
     // Computeds
@@ -182,7 +191,8 @@ function transpile(codeText) {
             var _m = computeds_1[_l], id = _m.id, node = _m.node;
             computedIdentifiers[id] = node;
             emitComments(node);
-            emitLine("const ".concat(id, " = computed(").concat(transpiledText(node), ");\n"));
+            emitLine("const ".concat(id, " = computed(").concat(transpiledText(node), ");"));
+            emitNewLine();
         }
     }
     // Watches
@@ -195,7 +205,8 @@ function transpile(codeText) {
             var decoArg = deco.arguments[0].value;
             var decoArg1 = (((_b = deco.arguments) === null || _b === void 0 ? void 0 : _b.length) > 1 ? deco.arguments[1] : null);
             emitComments(node);
-            emitLine("watch(() => ".concat(decoArg, ".value, ").concat(transpiledText(node)).concat(decoArg1 ? (', ' + code.getSource(decoArg1)) : '', ");\n"));
+            emitLine("watch(() => ".concat(decoArg, ".value, ").concat(transpiledText(node)).concat(decoArg1 ? (', ' + code.getSource(decoArg1)) : '', ");"));
+            emitNewLine();
         }
     }
     var plainMethods = methods.filter(function (x) { return !(0, astTools_1.isDecorated)(x) && x.kind == 'method'; }).map(code.deconstructProperty);
@@ -211,9 +222,12 @@ function transpile(codeText) {
             var _q = specialFunctions_1[_p], id = _q.id, node = _q.node;
             emitComments(node);
             if (id == 'created')
-                emitLine((0, astTools_1.unIndent)(transpiledText(node.value.body)).slice(2, -3) + '\n');
+                emitLine(code.unIndent(transpiledText(node.value.body)).slice(2, -3).trim());
             else if (id == 'mounted')
-                emitLine("onMounted(".concat(transpiledText(node), ");\n"));
+                emitLine("onMounted(".concat(transpiledText(node), ");"));
+            else
+                continue;
+            emitNewLine();
         }
     }
     // Regular functions
@@ -226,7 +240,8 @@ function transpile(codeText) {
         for (var _r = 0, functions_1 = functions; _r < functions_1.length; _r++) {
             var _s = functions_1[_r], id = _s.id, node = _s.node;
             emitComments(node);
-            emitLine("function ".concat(id).concat(transpiledText(node.value), "\n"));
+            emitLine("function ".concat(id).concat(transpiledText(node.value)));
+            emitNewLine();
         }
     }
     // Static functions
@@ -239,7 +254,8 @@ function transpile(codeText) {
         for (var _t = 0, staticFunctions_1 = staticFunctions; _t < staticFunctions_1.length; _t++) {
             var _u = staticFunctions_1[_t], id = _u.id, node = _u.node;
             emitComments(node);
-            emitLine("function ".concat(id).concat(transpiledText(node.value), "\n"));
+            emitLine("function ".concat(id).concat(transpiledText(node.value)));
+            emitNewLine();
         }
     }
     // Exports (skip export of Vue class from vue-facing-decorator)
@@ -250,7 +266,8 @@ function transpile(codeText) {
         for (var _v = 0, exportNodes_1 = exportNodes; _v < exportNodes_1.length; _v++) {
             var c = exportNodes_1[_v];
             emitComments(c);
-            emitLine((0, astTools_1.unIndent)(code.getSource(c) + '\n'));
+            emitLine(code.unIndent(code.getSource(c)));
+            emitNewLine();
         }
     }
     if (issues === null || issues === void 0 ? void 0 : issues.length) {
