@@ -24,7 +24,7 @@
 	
 	const templateText = ref();
 	const styleText = ref();
-	const scriptText = ref(localStorage.getItem('sfc') ?? '// Paste Vue2 SFC code here');
+	const scriptText = ref(localStorage.getItem('sfc') ?? '// Paste Vue2/3 class based SFC here');
 	const transformed = ref('// &lt;script setup&gt; code appears here');
 
 	watch(scriptText, data => {
