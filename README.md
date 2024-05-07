@@ -1,6 +1,29 @@
 # vue-unclassify
 
-Generate Vue3 composition SFC from Vue2/3 class-based single file components.
+Generate Vue3 TypeScript composition SFC from Vue2/3 class-based single file TypeScript components. Can also be used to convert `vue-facing-decorator` classes to `<script setup>`.
+
+This is very much an opinionated **alpha** version that only attempts to transform the `<script>` element of an SFC. There are surely heaps of bugs.
+
+The resulting script is always reordered as
+```html
+<template>
+    ... (unchanged as of now)
+</template>
+<script setup>
+  // Static/non-class/non reactive code
+  // Props
+  // Emits
+  // State (ref:s)
+  // Computeds
+  // Watches
+  // Initialization (onMounted et al)
+  // Functions (former member methods)
+  // Exports (other than default Vue class)
+</script>
+<style>
+   ... (as-is)
+</style>
+```
 
 Usage: `vue-unclassify [-r/--replace] [file patterns...]`
 ...or run front end with interactive transpilation (WIP)
@@ -10,6 +33,9 @@ Usage: `vue-unclassify [-r/--replace] [file patterns...]`
 [AST viewer for TypeScript (not ESTree format?)](https://ts-ast-viewer.com/)
 
 ## TODOs
+[ ] Report that no files match input pattern
+
+[ ] Transpile `$emit` in `template`
 
 ### Lower priority TODOs
 [ ] `this.$refs.xyz.focus` -> `const xyz = ref(); ... xyz.value.focus();`
