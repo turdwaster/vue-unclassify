@@ -13,22 +13,24 @@ export function transpile(codeText: string) {
     const issues: { message: string, node: AnyNode }[] = [];
 
     function emitSectionHeader(text: string | null) {
-        xformed += `// ${text}\n`;
+        emitLine(`// ${text}`);
     }
 
     function emitLine(text: string | null) {
-        if (text?.length) {
-            if (text === '\n')
-                xformed += text;
-            else
-                xformed += `${text}\n`;
+        if (text?.trim()?.length) {
+            xformed += text;
+            emitNewLine();
         }
     }
 
+    function emitNewLine() {
+        xformed += code.newLine;
+    }
+
     function emitComments(node: AnyNode) {
-        let comments = code.getCommentsFor(node);
+        const comments = code.getCommentsFor(node);
         if (comments?.length) {
-            xformed += '\n';
+            emitNewLine();
             xformed += comments;
         }
     }
@@ -39,7 +41,7 @@ export function transpile(codeText: string) {
         .map(code.getSource)
         .filter((x: string | null) => !removeExports.some(r => x!.includes(r)))
         .map(emitLine);
-    emitLine('\n');
+    emitNewLine();
 
     // Try vue-facing-decorator style class def first (class X extends Vue ... export default X)
     let classNode = code.ast.body.find(x => x.type === 'ClassDeclaration' && x.superClass?.type === 'Identifier' && x.superClass.name === 'Vue') as ClassDeclaration;
@@ -58,7 +60,8 @@ export function transpile(codeText: string) {
     if (outsideCode?.length) {
         for (const c of outsideCode) {
             emitComments(c);
-            emitLine(unIndent(code.getSource(c)! + '\n'));
+            emitLine(code.unIndent(code.getSource(c)!));
+            emitNewLine();
         }
     }
 
@@ -78,10 +81,10 @@ export function transpile(codeText: string) {
         emitSectionHeader('Static shared data (move to separate script section?)');
         for (const { id, typeStr, node } of staticMembers) {
             emitComments(node);
-            const initializer = node.value != null ? ' = ' + unIndent(code.getSource(node.value)!) : '';
+            const initializer = node.value != null ? ' = ' + code.unIndent(code.getSource(node.value)!) : '';
             emitLine(`const ${id}${typeStr ? ': ' + typeStr : ''}${initializer};`);
         }
-        emitLine('\n');
+        emitNewLine();
     }
 
     // Static non-reactive data (uninitialized instance properties)
@@ -93,7 +96,7 @@ export function transpile(codeText: string) {
             emitComments(node);
             emitLine(`let ${id}${typeStr ? ': ' + typeStr : ''};`);
         }
-        emitLine('\n');
+        emitNewLine();
     }
 
     // Props
@@ -107,7 +110,8 @@ export function transpile(codeText: string) {
             emitComments(node);
             emitLine(`\t${id}${typeStr ? ': ' + typeStr : ''}${node.value != null ? ' = ' + code.getSource(node.value) : ''},`);
         }
-        emitLine('});\n');
+        emitLine('});');
+        emitNewLine();
     }
 
     // Emits - found by usage
@@ -127,7 +131,7 @@ export function transpile(codeText: string) {
     const emitNames = Object.keys(emits);
     if (emitNames.length) {
         emitSectionHeader('Emits');
-        emitLine(`const emit = defineEmits(['${emitNames.join('\', \'')}']);\n`);
+        emitLine(`const emit = defineEmits(['${emitNames.join('\', \'')}']);`);
     }
 
     // Refs
@@ -140,7 +144,7 @@ export function transpile(codeText: string) {
             emitComments(node);
             emitLine(`const ${id} = ref${typeStr ? (`<${typeStr}>`) : ''}(${code.getSource(node.value)});`);
         }
-        emitLine('\n');
+        emitNewLine();
     }
 
     // function/lambda body transpilation
@@ -187,7 +191,7 @@ export function transpile(codeText: string) {
         // this.[other member] -> [other member]
         bodyText = bodyText.replace(otherMemberRegexp, '$1');
 
-        return unIndent(bodyText);
+        return code.unIndent(bodyText);
     }
 
     const methods = memberNodes.filter(x => x.type === 'MethodDefinition') as MethodDefinition[];
@@ -199,7 +203,8 @@ export function transpile(codeText: string) {
         for (const { id, node } of computeds) {
             computedIdentifiers[id] = node;
             emitComments(node);
-            emitLine(`const ${id} = computed(${transpiledText(node)});\n`);
+            emitLine(`const ${id} = computed(${transpiledText(node)});`);
+            emitNewLine();
         }
     }
     
@@ -212,7 +217,8 @@ export function transpile(codeText: string) {
             const decoArg = (deco.arguments[0] as Literal).value;
             const decoArg1 = (deco.arguments?.length > 1 ? deco.arguments[1] : null) as Expression;
             emitComments(node);
-            emitLine(`watch(() => ${decoArg}.value, ${transpiledText(node)}${decoArg1 ? (', ' + code.getSource(decoArg1)) : ''});\n`);
+            emitLine(`watch(() => ${decoArg}.value, ${transpiledText(node)}${decoArg1 ? (', ' + code.getSource(decoArg1)) : ''});`);
+            emitNewLine();
         }
     }
 
@@ -226,9 +232,12 @@ export function transpile(codeText: string) {
         for (const { id, node } of specialFunctions) {
             emitComments(node);
             if (id == 'created')
-                emitLine(unIndent(transpiledText((node.value! as any).body)).slice(2, -3) + '\n');
+                emitLine(code.unIndent(transpiledText((node.value! as any).body)).slice(2, -3).trim());
             else if (id == 'mounted')
-                emitLine(`onMounted(${transpiledText(node)});\n`);
+                emitLine(`onMounted(${transpiledText(node)});`);
+            else
+                continue;
+            emitNewLine();
         }
     }
 
@@ -238,7 +247,8 @@ export function transpile(codeText: string) {
         emitSectionHeader('Functions');
         for (const { id, node } of functions) {
             emitComments(node);
-            emitLine(`function ${id}${transpiledText(node.value!)}\n`);
+            emitLine(`function ${id}${transpiledText(node.value!)}`);
+            emitNewLine();
         }
     }
 
@@ -248,7 +258,8 @@ export function transpile(codeText: string) {
         emitSectionHeader('Static functions');
         for (const { id, node } of staticFunctions) {
             emitComments(node);
-            emitLine(`function ${id}${transpiledText(node.value!)}\n`);
+            emitLine(`function ${id}${transpiledText(node.value!)}`);
+            emitNewLine();
         }
     }
 
@@ -259,7 +270,8 @@ export function transpile(codeText: string) {
         emitSectionHeader('Exports');
         for (const c of exportNodes) {
             emitComments(c);
-            emitLine(unIndent(code.getSource(c)! + '\n'));
+            emitLine(code.unIndent(code.getSource(c)!));
+            emitNewLine();
         }
     }
 

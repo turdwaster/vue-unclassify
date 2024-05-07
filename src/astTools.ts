@@ -7,6 +7,8 @@ export interface ParsedCode {
     deconstructProperty: (node: MethodDefinition | PropertyDefinition) => DeconstructedProperty;
     asLambda: (node: MethodDefinition | PropertyDefinition) => string | undefined;
     getCommentsFor: (node: AnyNode | null | undefined) => string;
+    unIndent: (text: string) => string;
+    readonly newLine: string;
 }
 
 export interface DeconstructedProperty {
@@ -16,6 +18,7 @@ export interface DeconstructedProperty {
 }
 
 export function parseTS(code: string): ParsedCode {
+    const newLine = getNewLine(code);
     const parser = Parser.extend(tsPlugin() as any);
     try {
         const comments: Comment[] = [];
@@ -26,23 +29,29 @@ export function parseTS(code: string): ParsedCode {
             locations: true // Required for acorn-typescript
         });
 
-        const commentLines = mapComments(code, comments);
+        const commentLines = mapComments(code, newLine, comments);
         return {
             ast,
             getSource: asSource.bind(null, code),
             deconstructProperty: deconstructProperty.bind(null, code),
             asLambda: asLambda.bind(null, code),
-            getCommentsFor: getCommentsBefore.bind(null, code, commentLines)
+            getCommentsFor: getCommentsBefore.bind(null, code, commentLines),
+            unIndent: unIndent.bind(null, code, newLine),
+            newLine
         };        
     } catch (ex: any) {
         let msg = '// Transpilation failure - ' + (ex?.message ?? JSON.stringify(ex));
         if (ex.loc?.line)
-            msg += '\n' + code?.split('\n').slice(ex.loc.line - 1, ex.loc.line);
+            msg += newLine + code?.split(newLine).slice(ex.loc.line - 1, ex.loc.line);
         throw new Error(msg);
     }
 }
 
-function mapComments(code: string, comments: Comment[]) {
+export function getNewLine(code: string) {
+    return code.includes('\x0d\x0a') ? '\x0d\x0a' : '\x0a';
+}
+
+function mapComments(code: string, newLine: string, comments: Comment[]) {
     comments.reverse();
     const lines: { [line: number] : string } = {};
 
@@ -63,8 +72,8 @@ function mapComments(code: string, comments: Comment[]) {
             line++;
 
         const prefix = c.type === 'Block' ? '/*' : '//';
-        const suffix = c.type === 'Block' ? '*/\n' : '\n';
-        lines[line] = prefix + c.value + suffix + (lines[line] ?? '');
+        const suffix = c.type === 'Block' ? '*/' : '';
+        lines[line] = `${prefix}${c.value}${suffix}${newLine}${lines[line] ?? ''}`;
     }
     return lines;
 }
@@ -136,8 +145,8 @@ export function applyRecursively(node: AnyNode, method: (node: AnyNode) => void)
 
 const indentRegex = /^([ \t]+)(?:[^\s]|$)/;
 
-export function unIndent(bodyText: string) {
-    let lines = bodyText.split('\n');
+export function unIndent(code: string, newLine: string, bodyText: string) {
+    let lines = bodyText.split(newLine);
     if (lines.length > 1) {
         let minIndent: string | null = null;
         for (const line of lines) {
@@ -147,7 +156,7 @@ export function unIndent(bodyText: string) {
         }
 
         if (minIndent?.length)
-            bodyText = lines.map(l => l.replace(minIndent!, '')).join('\n');
+            bodyText = lines.map(l => l.replace(minIndent!, '')).join(newLine);
     }
     return bodyText;
 }

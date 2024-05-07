@@ -53,7 +53,6 @@ watch(() => deepStuff.value, (val: string) => {
 }, { deep: true, immediate: true });
 
 // Initialization
-
 if (!aggregatedParams)
 	aggregatedParams = ParamBag.aggregatedValueNames;
 

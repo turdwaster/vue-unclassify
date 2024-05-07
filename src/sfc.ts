@@ -1,3 +1,4 @@
+import { getNewLine } from './astTools';
 import { transpile } from './transpiler';
 
 export interface SFCSections {
@@ -5,9 +6,11 @@ export interface SFCSections {
     scriptNode?: string;
     scriptBody?: string;
     styleNode?: string;
+    newLine: string;
 }
 
 export function splitSFC(text: string) {
+    const newLine = getNewLine(text);
     const scriptNode = extractTag(text, 'script');
     let scriptBody = undefined;
     if (scriptNode) {
@@ -22,15 +25,16 @@ export function splitSFC(text: string) {
         scriptNode,
         scriptBody,
         styleNode: extractTag(text, 'style'),
+        newLine
     };
 }
 
 export function joinSFC(sfc: SFCSections) {
     let result = '';
     if (sfc.templateNode?.length)
-        result += `${sfc.templateNode}\n\n`;
+        result += `${sfc.templateNode}${sfc.newLine}${sfc.newLine}`;
     if (sfc.scriptBody?.length)
-        result += `${sfc.scriptNode}\n\n`;
+        result += `${sfc.scriptNode}${sfc.newLine}${sfc.newLine}`;
     if (sfc.styleNode?.length)
         result += sfc.styleNode;
     return result;
@@ -40,7 +44,7 @@ export function transpileSFC(source: string) {
     const sfc = splitSFC(source);
     if (sfc.scriptBody?.length && !sfc.scriptNode?.includes('<script setup')) {
         sfc.scriptBody = transpile(sfc.scriptBody);
-        sfc.scriptNode = `<script setup lang="ts">\n${sfc.scriptBody.trimEnd()}\n</script>`;
+        sfc.scriptNode = `<script setup lang="ts">${sfc.newLine}${sfc.scriptBody.trimEnd()}${sfc.newLine}</script>`;
     }
     return joinSFC(sfc);
 }
