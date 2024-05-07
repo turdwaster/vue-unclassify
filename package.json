@@ -1,7 +1,7 @@
 {
   "name": "@linden.dev/vue-unclassify",
-  "version": "0.2.0",
-  "description": "Create Vue 3 script setup SFC from Vue2/3 class based SFCs",
+  "version": "0.2.1",
+  "description": "Create Vue 3 script setup SFC from Vue2/3 class based TypeScript SFCs",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/turdwaster/vue-unclassify.git"
