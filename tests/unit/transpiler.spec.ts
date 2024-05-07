@@ -1,14 +1,9 @@
-import { transpile } from '@/transpiler';
+import { transpile, transpileTemplate } from '@/transpiler';
 import { splitSFC } from '@/sfc';
 import { toMatchFile } from 'jest-file-snapshot';
 import { readVueFile, vueFiles } from './testUtils';
 
 expect.extend({ toMatchFile });
-
-function transpileFile(name: string) {
-    const { scriptBody } = splitSFC(readVueFile(name));
-    return transpile(scriptBody!);
-}
 
 function makeClass(body: string) {
     return `
@@ -268,5 +263,16 @@ describe('transpiler', () => {
             export default toNative(HideSwitch)
             export { HideSwitch }
         </script>`;
+    });
+
+    it(`transpiles $emit in template`, () => {
+        const src = `<template>
+            <v-btn x-small @click="$emit('change', 1)"><b>+</b></v-btn>
+            <br />
+            <v-btn x-small @click="$emit('change', -1)"><b>-</b></v-btn>
+        </template>`;
+        const res = transpileTemplate(src);
+        expect(res).toContain('emit(\'change\'');
+        expect(res).not.toContain('$emit');
     });
 });

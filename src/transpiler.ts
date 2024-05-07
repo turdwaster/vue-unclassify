@@ -1,8 +1,12 @@
 import { AnyNode, CallExpression, ClassDeclaration, ExportDefaultDeclaration, ExportNamedDeclaration,
     Expression, Literal, MethodDefinition, PropertyDefinition } from 'acorn';
-import { applyRecursively, isDecorated, isDecoratedWith, parseTS, unIndent } from './astTools';
+import { applyRecursively, isDecorated, isDecoratedWith, parseTS } from './astTools';
 
 const removeExports = ['vue-property-decorator', 'vue-class-component', 'vue-facing-decorator', ' Vue ', ' Vue, '];
+
+export function transpileTemplate(codeText: string) {
+    return codeText.replace(/\$emit\s?\(/g, 'emit(');
+}
 
 export function transpile(codeText: string) {
     // Fixup: interface before @Component -> syntax error

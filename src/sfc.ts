@@ -1,5 +1,5 @@
 import { getNewLine } from './astTools';
-import { transpile } from './transpiler';
+import { transpile, transpileTemplate } from './transpiler';
 
 export interface SFCSections {
     templateNode?: string;
@@ -46,6 +46,8 @@ export function transpileSFC(source: string) {
         sfc.scriptBody = transpile(sfc.scriptBody);
         sfc.scriptNode = `<script setup lang="ts">${sfc.newLine}${sfc.scriptBody.trimEnd()}${sfc.newLine}</script>`;
     }
+    if (sfc.templateNode?.length)
+        sfc.templateNode = transpileTemplate(sfc.templateNode);
     return joinSFC(sfc);
 }
 
