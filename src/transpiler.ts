@@ -238,7 +238,7 @@ export function transpile(codeText: string) {
         for (const { id, node } of specialFunctions) {
             emitComments(node);
             if (id == 'created')
-                emitLine(code.unIndent(transpiledText((node.value! as any).body)).slice(2, -3).trim());
+                emitLine(code.unIndent(transpiledText((node.value! as any).body)).slice(2, -2).trim());
             else if (id == 'mounted')
                 emitLine(`onMounted(${transpiledText(node)});`);
             else
