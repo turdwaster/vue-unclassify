@@ -48,7 +48,7 @@ export function transpileSFC(source: string) {
     }
     if (sfc.templateNode?.length)
         sfc.templateNode = transpileTemplate(sfc.templateNode);
-    return joinSFC(sfc);
+    return sfc;
 }
 
 function extractTag(data: string, tagName: string) {
