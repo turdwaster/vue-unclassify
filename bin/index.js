@@ -24,7 +24,7 @@ if (paths.length) {
             var filename = files_1[_i];
             console.info('\x1b[36mTranspiling ' + filename + '...\x1b[0m');
             var src = (0, fs_1.readFileSync)(filename, { encoding: 'utf-8' });
-            var result = (0, sfc_1.transpileSFC)(src);
+            var result = (0, sfc_1.joinSFC)((0, sfc_1.transpileSFC)(src));
             if (args.values.replace)
                 (0, fs_1.writeFileSync)(filename, result);
             else

@@ -32,17 +32,21 @@ The resulting script is always reordered as
 ## Features
 * AST-based transpilation (90%) using `acorn` - a lot less fragile than existing RegEx tools
 * Direct conversion to `<script setup>`
-* Attempts to retain style/comments
+* Attempts to attach comments to original code
 
 ## Useful links
 [AST explorer, many languages etc](https://astexplorer.net/)
 
 ## TODOs
+[ ] Don't generate invalid uninitialized consts from static members; do `static` -> `let`, `static readonly` -> `const`
+
+[ ] Create `defineEmits` for `$emit` only present in `<template>`
+
 [ ] Propagate errors to stdout instead of dumping them in the script tag
 
 [ ] Transpile writable computeds (`set` methods)
 
-[ ] Improve lambda body extraction (remove .substring hack)
+[ ] Improve method body extraction for created() (.substring hack)
 
 ### Lower priority TODOs
 [ ] `this.$refs.xyz.focus` -> `const xyz = ref(); ... xyz.value.focus();`

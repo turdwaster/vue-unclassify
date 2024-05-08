@@ -16,19 +16,19 @@ interface Unit {
 }
 
 // Props
-const props = defineProps({
-	param: ParamValue,
-	locked: boolean,
-	readwrite: boolean,
-	show: boolean,
-	writable: boolean,
-	customDescription: string,
-	inline: string,
-	onChange: (newValue: any) => void,
-	target: string,
-	minValue: number,
-	maxValue: number,
-});
+const props = defineProps<{
+	param: ParamValue;
+	locked: boolean;
+	readwrite: boolean;
+	show: boolean;
+	writable: boolean;
+	customDescription: string;
+	inline: string;
+	onChange: (newValue: any) => void;
+	target: string;
+	minValue: number;
+	maxValue: number;
+}>();
 
 // State
 const createComment = ref<boolean>(false);

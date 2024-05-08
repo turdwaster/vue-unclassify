@@ -97,14 +97,14 @@ function transpile(codeText) {
     var propIdentifiers = {};
     if (props === null || props === void 0 ? void 0 : props.length) {
         emitSectionHeader('Props');
-        emitLine('const props = defineProps({');
+        emitLine('const props = defineProps<{');
         for (var _g = 0, props_1 = props; _g < props_1.length; _g++) {
             var _h = props_1[_g], id = _h.id, typeStr = _h.typeStr, node = _h.node;
             propIdentifiers[id] = node;
             emitComments(node);
-            emitLine("\t".concat(id).concat(typeStr ? ': ' + typeStr : '').concat(node.value != null ? ' = ' + code.getSource(node.value) : '', ","));
+            emitLine("\t".concat(id).concat(typeStr ? ': ' + typeStr : '').concat(node.value != null ? ' = ' + code.getSource(node.value) : '', ";"));
         }
-        emitLine('});');
+        emitLine('}>();');
         emitNewLine();
     }
     // Emits - found by usage
@@ -222,7 +222,7 @@ function transpile(codeText) {
             var _q = specialFunctions_1[_p], id = _q.id, node = _q.node;
             emitComments(node);
             if (id == 'created')
-                emitLine(code.unIndent(transpiledText(node.value.body)).slice(2, -3).trim());
+                emitLine(code.unIndent(transpiledText(node.value.body)).slice(2, -2).trim());
             else if (id == 'mounted')
                 emitLine("onMounted(".concat(transpiledText(node), ");"));
             else

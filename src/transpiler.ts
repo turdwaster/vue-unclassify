@@ -108,13 +108,13 @@ export function transpile(codeText: string) {
     const propIdentifiers: { [id: string]: AnyNode } = {};
     if (props?.length) {
         emitSectionHeader('Props');
-        emitLine('const props = defineProps({');
+        emitLine('const props = defineProps<{');
         for (const { id, typeStr, node } of props) {
             propIdentifiers[id] = node;
             emitComments(node);
-            emitLine(`\t${id}${typeStr ? ': ' + typeStr : ''}${node.value != null ? ' = ' + code.getSource(node.value) : ''},`);
+            emitLine(`\t${id}${typeStr ? ': ' + typeStr : ''}${node.value != null ? ' = ' + code.getSource(node.value) : ''};`);
         }
-        emitLine('});');
+        emitLine('}>();');
         emitNewLine();
     }
 

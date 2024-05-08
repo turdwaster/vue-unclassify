@@ -17,13 +17,13 @@ const aggregatedParams: string[];
 let nonReactive: boolean;
 
 // Props
-const props = defineProps({
-	sizingId: string,
-	params: ParamBag,
-	names: string[],
-	inline: boolean,
-	filter: 'All' | 'UserDefined' | 'Basic' | 'Problematic',
-});
+const props = defineProps<{
+	sizingId: string;
+	params: ParamBag;
+	names: string[];
+	inline: boolean;
+	filter: 'All' | 'UserDefined' | 'Basic' | 'Problematic';
+}>();
 
 // State
 const reactive = ref<ParamBag>(null);

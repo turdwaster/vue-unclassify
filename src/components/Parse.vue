@@ -20,7 +20,6 @@
 
 <script setup lang="ts">
 	import { ref, watch } from 'vue';
-	import { transpile } from '../transpiler';
 	import { transpileSFC } from '../sfc';
 	import hljs from 'highlight.js/lib/core';
 	import typescript from 'highlight.js/lib/languages/typescript';
@@ -34,13 +33,12 @@
 	const transformed = ref('// &lt;script setup&gt; code appears here');
 
 	watch(scriptText, data => {
-		localStorage.setItem('sfc', data ?? '');
-		const parts = transpileSFC(data);
-		templateText.value = parts.templateNode ?? '';
-		styleText.value = parts.styleNode ?? '';
 		try {
-			const result = parts.scriptBody ? transpile(parts.scriptBody) : '';
-			transformed.value = hljs.highlight(result, { language: 'typescript' }).value;
+			localStorage.setItem('sfc', data ?? '');
+			const parts = transpileSFC(data);
+			templateText.value = parts.templateNode ?? '';
+			styleText.value = parts.styleNode ?? '';
+			transformed.value = hljs.highlight(parts.scriptBody ?? '', { language: 'typescript' }).value;
 		} catch(ex: any) {
 			transformed.value = ex?.message ?? JSON.stringify(ex);
 		}

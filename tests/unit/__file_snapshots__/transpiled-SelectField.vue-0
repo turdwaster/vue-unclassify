@@ -13,18 +13,18 @@ value: string;
 }
 
 // Props
-const props = defineProps({
-	param: ParamValue,
-	locked: boolean,
-	readwrite: boolean,
-	items: SelectValue[],
-	itemText: string,
-	itemKey: string,
-	onChange: (newValue: any) => void,
-	dropdown: boolean | string,
-	default: string,
-	target: string,
-});
+const props = defineProps<{
+	param: ParamValue;
+	locked: boolean;
+	readwrite: boolean;
+	items: SelectValue[];
+	itemText: string;
+	itemKey: string;
+	onChange: (newValue: any) => void;
+	dropdown: boolean | string;
+	default: string;
+	target: string;
+}>();
 
 // State
 const values = ref<SelectValue[]>([]);
