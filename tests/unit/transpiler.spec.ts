@@ -121,6 +121,23 @@ describe('transpiler', () => {
         expect(res).not.toContain('this');
     });
 
+    it(`handles explicit computed return type`, () => {
+        const src = makeClass(`
+            get dirty(): boolean { return true; }
+            get showPrice(): boolean | undefined { return this.model?.showPrice; }
+            get tooltip(): string {
+                if (this.dirty) {
+                    return "Save changes";
+                }
+            }    
+        `);
+        const res = transpile(src);
+        expect(res).toContain('showPrice = computed((): boolean | undefined => {');
+        expect(res).toContain('tooltip = computed((): string => {');
+        expect(res).toContain('if (dirty.value)');
+        expect(res).not.toContain('this');
+    });
+
     it(`handles implicit ref() type`, () => {
         const src = makeClass(`
             public typeLess1 = [1,2,3];
@@ -274,5 +291,15 @@ describe('transpiler', () => {
         const res = transpileTemplate(src);
         expect(res).toContain('emit(\'change\'');
         expect(res).not.toContain('$emit');
+    });
+
+    it(`handles broken source ranges`, () => {
+        const src = `export default class ParamList extends Vue { // Newline needed here to trigger
+            @Watch('deepStuff') private onDeepChange(val: string) {} }`;
+        const res = transpile(src);
+        expect(res).toContain('watch(() => deepStuff.value, (val: string) =>');
+        expect(res).not.toContain('omponent');
+        expect(res).not.toContain('this');
+        expect(res).not.toContain('ent');
     });
 });

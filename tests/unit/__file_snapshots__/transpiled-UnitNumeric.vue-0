@@ -71,11 +71,11 @@ const useImperial = computed(() => {
 	return props.param.useImperialUnits;
 });
 
-const baseUnitValue = computed((): number {
+const baseUnitValue = computed((): number => {
 	return unitValue.value?.baseUnitValue;
 });
 
-const predefValues = computed((): SelectValue[] {
+const predefValues = computed((): SelectValue[] => {
 	const unit = currentUnit.value;
 	if (!unit || !props.param)
 		return null;
@@ -105,12 +105,12 @@ const errorClass = computed(() => {
 	return classNames;
 });
 
-const staticErrors = computed((): string {
+const staticErrors = computed((): string => {
 	const def = props.param?.definition;
 	if (!def || def.ReadOnly)
 		return;
 
-	if (def.Type === 'Number') => {
+	if (def.Type === 'Number') {
 		const rawVal = value.value as string;
 		if (rawVal != null && rawVal.length && isNaN(parseFloat(rawVal.replace(',', '.'))))
 			return 'Not a valid number';
@@ -154,7 +154,7 @@ const infos = computed(() => {
 	return all?.length ? all : undefined;
 });
 
-const commentField = computed((): string {
+const commentField = computed((): string => {
 	return props.param?.valueName;
 });
 

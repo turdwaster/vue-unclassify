@@ -71,7 +71,7 @@ const messages = computed(() => {
 		return 'No options are available';
 });
 
-const commentField = computed((): string {
+const commentField = computed((): string => {
 	return props.param?.valueName;
 });
 

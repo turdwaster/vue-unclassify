@@ -5,7 +5,7 @@ export interface ParsedCode {
     ast: Program;
     getSource: (node: AnyNode | null | undefined) => string | null;
     deconstructProperty: (node: MethodDefinition | PropertyDefinition) => DeconstructedProperty;
-    asLambda: (node: MethodDefinition | PropertyDefinition) => string | undefined;
+    asLambda: (node: MethodDefinition) => string | undefined;
     getCommentsFor: (node: AnyNode | null | undefined) => string;
     unIndent: (text: string) => string;
     readonly newLine: string;
@@ -29,6 +29,7 @@ export function parseTS(code: string): ParsedCode {
             locations: true // Required for acorn-typescript
         });
 
+        fixBrokenSourceRanges(ast);
         const commentLines = mapComments(code, newLine, comments);
         return {
             ast,
@@ -45,6 +46,20 @@ export function parseTS(code: string): ParsedCode {
             msg += newLine + code?.split(newLine).slice(ex.loc.line - 1, ex.loc.line);
         throw new Error(msg);
     }
+}
+
+function fixBrokenSourceRanges(ast: Program) {
+    // Repair buggy node source ranges (acorn-typescript bug?)
+    applyRecursively(ast, n => {
+        if (n.end < n.start) {
+            const locStart = (n.loc?.start as any).index;
+            const locEnd = (n.loc?.end as any).index;
+            if (locStart === n.start && locEnd >= locStart) {
+                // console.debug(`Adjusted broken range (${n.start}-${n.end}) to (${n.start}-${locEnd}) for ${n.type} node in line ${n.loc?.start.line}`);
+                n.end = locEnd;
+            }
+        }
+    });
 }
 
 export function getNewLine(code: string) {
@@ -98,8 +113,13 @@ function deconstructProperty(code: string, node: PropertyDefinition | MethodDefi
     };
 }
 
-function asLambda(code: string, node: PropertyDefinition | MethodDefinition) {
-    return asSource(code, node?.value)?.replace(') {', ') => {');
+function asLambda(code: string, node: MethodDefinition) {
+    if (node.type === 'MethodDefinition' && node.value?.body) {
+        const params = node.value.params?.map(p => asSource(code, p)).join(', ') ?? '';
+        const retType  = asSource(code, (node.value as any).returnType) ?? '';
+        return '(' + params + ')' + retType + ' => ' + asSource(code, node.value.body);
+    }
+    throw new Error('Expecting a method definition');
 }
 
 function asSource(code: string, node: AnyNode | null | undefined) {

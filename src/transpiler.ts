@@ -165,7 +165,7 @@ export function transpile(codeText: string) {
 
     function transpiledText(node: MethodDefinition | PropertyDefinition | Expression) {
         let bodyText: string;
-        if (node.type === 'MethodDefinition' || node.type === 'PropertyDefinition')
+        if (node.type === 'MethodDefinition')
             bodyText = code.asLambda(node)!;
         else
             bodyText = code.getSource(node)!;
