@@ -15,6 +15,7 @@ function parseTS(code) {
             onComment: comments,
             locations: true // Required for acorn-typescript
         });
+        fixBrokenSourceRanges(ast);
         var commentLines = mapComments(code, newLine, comments);
         return {
             ast: ast,
@@ -34,6 +35,20 @@ function parseTS(code) {
     }
 }
 exports.parseTS = parseTS;
+function fixBrokenSourceRanges(ast) {
+    // Repair buggy node source ranges (acorn-typescript bug?)
+    applyRecursively(ast, function (n) {
+        var _a, _b;
+        if (n.end < n.start) {
+            var locStart = ((_a = n.loc) === null || _a === void 0 ? void 0 : _a.start).index;
+            var locEnd = ((_b = n.loc) === null || _b === void 0 ? void 0 : _b.end).index;
+            if (locStart === n.start && locEnd >= locStart) {
+                // console.debug(`Adjusted broken range (${n.start}-${n.end}) to (${n.start}-${locEnd}) for ${n.type} node in line ${n.loc?.start.line}`);
+                n.end = locEnd;
+            }
+        }
+    });
+}
 function getNewLine(code) {
     return code.includes('\x0d\x0a') ? '\x0d\x0a' : '\x0a';
 }
@@ -80,8 +95,13 @@ function deconstructProperty(code, node) {
     };
 }
 function asLambda(code, node) {
-    var _a;
-    return (_a = asSource(code, node === null || node === void 0 ? void 0 : node.value)) === null || _a === void 0 ? void 0 : _a.replace(') {', ') => {');
+    var _a, _b, _c, _d;
+    if (node.type === 'MethodDefinition' && ((_a = node.value) === null || _a === void 0 ? void 0 : _a.body)) {
+        var params = (_c = (_b = node.value.params) === null || _b === void 0 ? void 0 : _b.map(function (p) { return asSource(code, p); }).join(', ')) !== null && _c !== void 0 ? _c : '';
+        var retType = (_d = asSource(code, node.value.returnType)) !== null && _d !== void 0 ? _d : '';
+        return '(' + params + ')' + retType + ' => ' + asSource(code, node.value.body);
+    }
+    throw new Error('Expecting a method definition');
 }
 function asSource(code, node) {
     return node ? code.substring(node.start, node.end) : null;

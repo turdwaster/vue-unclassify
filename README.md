@@ -46,6 +46,8 @@ The resulting script is always reordered as
 
 [ ] Transpile writable computeds (`set` methods)
 
+[ ] Transpile `$router`
+
 [ ] Improve method body extraction for created() (.substring hack)
 
 ### Lower priority TODOs

@@ -151,7 +151,7 @@ function transpile(codeText) {
     var otherMemberRegexp = new RegExp("([^a-zA-Z0-9])this\\.", 'g');
     function transpiledText(node) {
         var bodyText;
-        if (node.type === 'MethodDefinition' || node.type === 'PropertyDefinition')
+        if (node.type === 'MethodDefinition')
             bodyText = code.asLambda(node);
         else
             bodyText = code.getSource(node);
