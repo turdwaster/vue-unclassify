@@ -51,7 +51,7 @@ const description = computed(() => {
 });
 
 const prefix = computed(() => {
-	return isAssumed ? '≈ ' : '';
+	return isAssumed.value ? '≈ ' : '';
 });
 
 const unit = computed(() => {
@@ -64,7 +64,7 @@ const readOnly = computed(() => {
 });
 
 const messages = computed(() => {
-	return (warnings || errors) && (warnings || []).concat(errors || []);
+	return (warnings.value || errors.value) && (warnings.value || []).concat(errors.value || []);
 });
 
 const useImperial = computed(() => {
@@ -93,13 +93,13 @@ const predefValues = computed((): SelectValue[] => {
 });
 
 const errorClass = computed(() => {
-	let classNames = isAssumed ? 'assumed ' : '';
-	if (errors?.length)
+	let classNames = isAssumed.value ? 'assumed ' : '';
+	if (errors.value?.length)
 		classNames += 'error';
-	else if (warnings?.length)
+	else if (warnings.value?.length)
 		classNames += 'warning';
 	else if (props.param.infos?.length) {
-		// Not testing "full" infos since this would make "Using xx kg" blue
+		// Not testing "full" infos.value since this would make "Using xx kg" blue
 		classNames += 'info';
 	}
 	return classNames;
@@ -159,11 +159,11 @@ const commentField = computed((): string => {
 });
 
 const showMenu = computed(() => {
-	return !!(usableUnits.value.length > 0 || props.target && commentField.value || showToggleAssumed);
+	return !!(usableUnits.value.length > 0 || props.target && commentField.value || showToggleAssumed.value);
 });
 
 const showToggleAssumed = computed(() => {
-	return !readOnly.value && props.param?.canBeAssumed && (isAssumed || baseUnitValue.value != null);
+	return !readOnly.value && props.param?.canBeAssumed && (isAssumed.value || baseUnitValue.value != null);
 });
 
 const isAssumed = computed(() => {

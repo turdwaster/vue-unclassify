@@ -205,9 +205,13 @@ export function transpile(codeText: string) {
     // Computeds
     const computeds = methods.filter(x => !isDecorated(x) && x.kind == 'get').map(code.deconstructProperty);
     if (computeds?.length) {
+        // Gather definitions
+        for (const { id, node } of computeds)
+            computedIdentifiers[id] = node;
+
+        // Transpile references
         emitSectionHeader('Computeds');
         for (const { id, node } of computeds) {
-            computedIdentifiers[id] = node;
             emitComments(node);
             emitLine(`const ${id} = computed(${transpiledText(node)});`);
             emitNewLine();

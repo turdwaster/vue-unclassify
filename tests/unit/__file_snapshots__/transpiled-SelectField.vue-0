@@ -41,7 +41,7 @@ const description = computed(() => {
 			return desc;
 	}
 	const descr = pdef && (tryToTranslate(pdef.Name) || pdef.Description);
-	return [ descr || 'No title', unit && `(${unit})` ].join(' ').trim();
+	return [ descr || 'No title', unit.value && `(${unit.value})` ].join(' ').trim();
 });
 
 const unit = computed(() => {

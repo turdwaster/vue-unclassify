@@ -28,13 +28,13 @@ const readOnly = computed(() => {
 });
 
 const messages = computed(() => {
-	return (warnings || errors) && (warnings || []).concat(errors || []);
+	return (warnings.value || errors.value) && (warnings.value || []).concat(errors.value || []);
 });
 
 const errorClass = computed(() => {
-	if ((errors || []).length > 0)
+	if ((errors.value || []).length > 0)
 		return 'error';
-	if ((warnings || []).length > 0)
+	if ((warnings.value || []).length > 0)
 		return 'warning';
 	return '';
 });

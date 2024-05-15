@@ -242,8 +242,7 @@ describe('transpiler', () => {
         public onFilterChange() {
             this.$emit("filter", this.filter);
         }
-        filter() { alert("Hit!"); }
-        `);
+        filter() { alert("Hit!"); }`);
 
         const res = transpile(src);
         expect(res).toContain('emit("filter", filter)');
@@ -254,10 +253,23 @@ describe('transpiler', () => {
 
     it(`transpiles $nextTick statements`, () => {
         const src = makeClass(`public pulseEvent(name: string) { this.$nextTick(() => (this as any)[name] = false); }`);
-
         const res = transpile(src);
         expect(res).toContain('nextTick(() => (this as any)[name] = false');
         expect(res).not.toContain('$nextTick');
+        expect(res).not.toContain('this.');
+    });
+
+    it(`transpiles out-of-order computed references`, () => {
+        const src = makeClass(`
+            public get totW() { return this.totAxleW - this.minX; }
+            public get totAxleW() { return this.axleX + 123; }
+            public get minX() { return Math.min(22, 33); }
+            public get axleX() { return this.minX + 2; }`);
+
+        const res = transpile(src);
+        expect(res).toContain('totAxleW.value - minX.value');
+        expect(res).toContain('axleX.value + 123');
+        expect(res).toContain('minX.value + 2');
         expect(res).not.toContain('this.');
     });
 
