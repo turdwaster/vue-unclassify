@@ -7,7 +7,7 @@ This is very much an opinionated **alpha** version that only attempts to transfo
 The resulting script is always reordered as
 ```html
 <template>
-    ... (unchanged as of now)
+    ... (minor replacements only as of now)
 </template>
 <script setup>
   // Static/non-class/non reactive code
@@ -35,10 +35,15 @@ The resulting script is always reordered as
 * Attempts to attach comments to original code
 
 ## Useful links
+[Interactive online version](https://turdwaster.github.io/linden_dev/)
 [AST explorer, many languages etc](https://astexplorer.net/)
 
 ## TODOs
-[ ] Don't generate invalid uninitialized consts from static members; do `static` -> `let`, `static readonly` -> `const`
+[ ] Bug: Watches for props are assuming a computed/ref target and watching `x.value` instead of `props.x`
+
+[ ] Bug: Don't generate invalid uninitialized consts from static members; do `static` -> `let`, `static readonly` -> `const`
+
+[ ] Shadowing locals need renaming (i.e. `const ba = this.ba;`)
 
 [ ] Create `defineEmits` for `$emit` only present in `<template>`
 

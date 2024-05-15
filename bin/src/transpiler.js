@@ -186,10 +186,15 @@ function transpile(codeText) {
     // Computeds
     var computeds = methods.filter(function (x) { return !(0, astTools_1.isDecorated)(x) && x.kind == 'get'; }).map(code.deconstructProperty);
     if (computeds === null || computeds === void 0 ? void 0 : computeds.length) {
-        emitSectionHeader('Computeds');
+        // Gather definitions
         for (var _l = 0, computeds_1 = computeds; _l < computeds_1.length; _l++) {
             var _m = computeds_1[_l], id = _m.id, node = _m.node;
             computedIdentifiers[id] = node;
+        }
+        // Transpile references
+        emitSectionHeader('Computeds');
+        for (var _o = 0, computeds_2 = computeds; _o < computeds_2.length; _o++) {
+            var _p = computeds_2[_o], id = _p.id, node = _p.node;
             emitComments(node);
             emitLine("const ".concat(id, " = computed(").concat(transpiledText(node), ");"));
             emitNewLine();
@@ -199,8 +204,8 @@ function transpile(codeText) {
     var watches = methods.filter(function (x) { return (0, astTools_1.isDecoratedWith)(x, 'Watch'); }).map(code.deconstructProperty);
     if (watches === null || watches === void 0 ? void 0 : watches.length) {
         emitSectionHeader('Watches');
-        for (var _o = 0, watches_1 = watches; _o < watches_1.length; _o++) {
-            var node = watches_1[_o].node;
+        for (var _q = 0, watches_1 = watches; _q < watches_1.length; _q++) {
+            var node = watches_1[_q].node;
             var deco = node.decorators[0].expression;
             var decoArg = deco.arguments[0].value;
             var decoArg1 = (((_b = deco.arguments) === null || _b === void 0 ? void 0 : _b.length) > 1 ? deco.arguments[1] : null);
@@ -218,8 +223,8 @@ function transpile(codeText) {
     });
     if (specialFunctions === null || specialFunctions === void 0 ? void 0 : specialFunctions.length) {
         emitSectionHeader('Initialization');
-        for (var _p = 0, specialFunctions_1 = specialFunctions; _p < specialFunctions_1.length; _p++) {
-            var _q = specialFunctions_1[_p], id = _q.id, node = _q.node;
+        for (var _r = 0, specialFunctions_1 = specialFunctions; _r < specialFunctions_1.length; _r++) {
+            var _s = specialFunctions_1[_r], id = _s.id, node = _s.node;
             emitComments(node);
             if (id == 'created')
                 emitLine(code.unIndent(transpiledText(node.value.body)).slice(2, -2).trim());
@@ -237,8 +242,8 @@ function transpile(codeText) {
     });
     if (functions === null || functions === void 0 ? void 0 : functions.length) {
         emitSectionHeader('Functions');
-        for (var _r = 0, functions_1 = functions; _r < functions_1.length; _r++) {
-            var _s = functions_1[_r], id = _s.id, node = _s.node;
+        for (var _t = 0, functions_1 = functions; _t < functions_1.length; _t++) {
+            var _u = functions_1[_t], id = _u.id, node = _u.node;
             emitComments(node);
             emitLine("function ".concat(id).concat(transpiledText(node.value)));
             emitNewLine();
@@ -251,8 +256,8 @@ function transpile(codeText) {
     });
     if (staticFunctions === null || staticFunctions === void 0 ? void 0 : staticFunctions.length) {
         emitSectionHeader('Static functions');
-        for (var _t = 0, staticFunctions_1 = staticFunctions; _t < staticFunctions_1.length; _t++) {
-            var _u = staticFunctions_1[_t], id = _u.id, node = _u.node;
+        for (var _v = 0, staticFunctions_1 = staticFunctions; _v < staticFunctions_1.length; _v++) {
+            var _w = staticFunctions_1[_v], id = _w.id, node = _w.node;
             emitComments(node);
             emitLine("function ".concat(id).concat(transpiledText(node.value)));
             emitNewLine();
@@ -263,8 +268,8 @@ function transpile(codeText) {
         .filter(function (c) { return code.getSource(c.specifiers[0]) !== className; });
     if (exportNodes === null || exportNodes === void 0 ? void 0 : exportNodes.length) {
         emitSectionHeader('Exports');
-        for (var _v = 0, exportNodes_1 = exportNodes; _v < exportNodes_1.length; _v++) {
-            var c = exportNodes_1[_v];
+        for (var _x = 0, exportNodes_1 = exportNodes; _x < exportNodes_1.length; _x++) {
+            var c = exportNodes_1[_x];
             emitComments(c);
             emitLine(code.unIndent(code.getSource(c)));
             emitNewLine();
