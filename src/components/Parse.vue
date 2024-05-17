@@ -29,13 +29,16 @@
 	
 	const templateText = ref();
 	const styleText = ref();
-	const scriptText = ref(localStorage.getItem('sfc') ?? '// Paste Vue2/3 class based SFC here');
+	const scriptText = ref(localStorage.getItem('sfc'));
 	const transformed = ref('// &lt;script setup&gt; code appears here');
+
+	if (!scriptText.value?.length)
+		import('../exampleComponent').then(x => scriptText.value = x.default);
 
 	watch(scriptText, data => {
 		try {
 			localStorage.setItem('sfc', data ?? '');
-			const parts = transpileSFC(data);
+			const parts = transpileSFC(data ?? '');
 			templateText.value = parts.templateNode ?? '';
 			styleText.value = parts.styleNode ?? '';
 			transformed.value = hljs.highlight(parts.scriptBody ?? '', { language: 'typescript' }).value;
