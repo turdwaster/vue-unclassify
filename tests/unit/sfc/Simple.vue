@@ -104,6 +104,8 @@ export default class ParamList extends Vue {
 	@Prop() public inline: boolean;
 	@Prop() public filter: 'All' | 'UserDefined' | 'Basic' | 'Problematic';
 
+	public deepStuff = { deep: { val: 123 } };
+
 	private static readonly killGroups = [ 'Pipe', 'Inlet.Pipes', 'Outlet.Pipes' ];
 
 	private static readonly redirectGroups: { [type: string]: string } = {
@@ -135,6 +137,8 @@ export default class ParamList extends Vue {
 	public get compact() {
 		return this.names != null && this.reactive != null;
 	}
+
+	public get reloadTrigger() { return this.names.join(','); }
 
 	private get groupMap() {
 		const map = {} as { [key: string]: ParameterDef };

@@ -80,7 +80,7 @@ const backingValue = computed(() => {
 });
 
 // Watches
-watch(() => items.value, (items: any) => {
+watch(() => props.items, (items: any) => {
 	setValues(items);
 });
 

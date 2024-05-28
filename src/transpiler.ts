@@ -152,20 +152,23 @@ export function transpile(codeText: string) {
     }
 
     // function/lambda body transpilation
+    const thisDot = `([^a-zA-Z0-9]|^)this\\.`;
 
     function replaceThisExpr(code: string, member: string, prefix?: string, newName?: string | null, suffix?: string) {
-        const regex = new RegExp(`([^a-zA-Z0-9])this\\.${member}([^a-zA-Z0-9])`, 'g');
+        const regex = new RegExp(`${thisDot}${member}([^a-zA-Z0-9]|$)`, 'g');
         return code.replace(regex, `$1${prefix ?? ''}${newName ?? member}${suffix ?? ''}$2`)
     }
 
     const computedIdentifiers: { [id: string]: AnyNode } = {};
-    const staticRefRegexp = new RegExp(`([^a-zA-Z0-9])${className}\\.`, 'g');
-    const watchRegexp = new RegExp(`([^a-zA-Z0-9])this\\.\\$watch\\s?\\(\\s?['"]([^'"]+)['"]`, 'g');
-    const otherMemberRegexp = new RegExp(`([^a-zA-Z0-9])this\\.`, 'g');
+    const staticRefRegexp = new RegExp(`([^a-zA-Z0-9]|^)${className}\\.`, 'g');
+    const watchRegexp = new RegExp(`${thisDot}\\$watch\\s?\\(\\s?['"]([^'"]+)['"]`, 'g');
+    const otherMemberRegexp = new RegExp(`${thisDot}`, 'g');
 
-    function transpiledText(node: MethodDefinition | PropertyDefinition | Expression) {
+    function transpiledText(node: MethodDefinition | PropertyDefinition | Expression | string) {
         let bodyText: string;
-        if (node.type === 'MethodDefinition')
+        if (typeof node == 'string')
+            bodyText = node;
+        else if (node.type === 'MethodDefinition')
             bodyText = code.asLambda(node)!;
         else
             bodyText = code.getSource(node)!;
@@ -224,10 +227,14 @@ export function transpile(codeText: string) {
         emitSectionHeader('Watches');
         for (const { node } of watches) {
             const deco = (node as any).decorators[0].expression as CallExpression;
-            const decoArg = (deco.arguments[0] as Literal).value;
+            const decoArg0 = (deco.arguments[0] as Literal).value;
             const decoArg1 = (deco.arguments?.length > 1 ? deco.arguments[1] : null) as Expression;
+
+            const watchedExpr = transpiledText(`this.${decoArg0}`);
+            const handler = transpiledText(node);
+            const extraArg = `${decoArg1 ? (', ' + code.getSource(decoArg1)) : ''}`;
             emitComments(node);
-            emitLine(`watch(() => ${decoArg}.value, ${transpiledText(node)}${decoArg1 ? (', ' + code.getSource(decoArg1)) : ''});`);
+            emitLine(`watch(() => ${watchedExpr}, ${handler}${extraArg});`);
             emitNewLine();
         }
     }

@@ -39,8 +39,6 @@ The resulting script is always reordered as
 [AST explorer, many languages etc](https://astexplorer.net/)
 
 ## TODOs
-[ ] Bug: Watches for props are assuming a computed/ref target and watching `x.value` instead of `props.x`
-
 [ ] Bug: Don't generate invalid uninitialized consts from static members; do `static` -> `let`, `static readonly` -> `const`
 
 [ ] Shadowing locals need renaming (i.e. `const ba = this.ba;`)

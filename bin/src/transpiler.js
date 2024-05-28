@@ -141,17 +141,20 @@ function transpile(codeText) {
         emitNewLine();
     }
     // function/lambda body transpilation
+    var thisDot = "([^a-zA-Z0-9]|^)this\\.";
     function replaceThisExpr(code, member, prefix, newName, suffix) {
-        var regex = new RegExp("([^a-zA-Z0-9])this\\.".concat(member, "([^a-zA-Z0-9])"), 'g');
+        var regex = new RegExp("".concat(thisDot).concat(member, "([^a-zA-Z0-9]|$)"), 'g');
         return code.replace(regex, "$1".concat(prefix !== null && prefix !== void 0 ? prefix : '').concat(newName !== null && newName !== void 0 ? newName : member).concat(suffix !== null && suffix !== void 0 ? suffix : '', "$2"));
     }
     var computedIdentifiers = {};
-    var staticRefRegexp = new RegExp("([^a-zA-Z0-9])".concat(className, "\\."), 'g');
-    var watchRegexp = new RegExp("([^a-zA-Z0-9])this\\.\\$watch\\s?\\(\\s?['\"]([^'\"]+)['\"]", 'g');
-    var otherMemberRegexp = new RegExp("([^a-zA-Z0-9])this\\.", 'g');
+    var staticRefRegexp = new RegExp("([^a-zA-Z0-9]|^)".concat(className, "\\."), 'g');
+    var watchRegexp = new RegExp("".concat(thisDot, "\\$watch\\s?\\(\\s?['\"]([^'\"]+)['\"]"), 'g');
+    var otherMemberRegexp = new RegExp("".concat(thisDot), 'g');
     function transpiledText(node) {
         var bodyText;
-        if (node.type === 'MethodDefinition')
+        if (typeof node == 'string')
+            bodyText = node;
+        else if (node.type === 'MethodDefinition')
             bodyText = code.asLambda(node);
         else
             bodyText = code.getSource(node);
@@ -207,10 +210,13 @@ function transpile(codeText) {
         for (var _q = 0, watches_1 = watches; _q < watches_1.length; _q++) {
             var node = watches_1[_q].node;
             var deco = node.decorators[0].expression;
-            var decoArg = deco.arguments[0].value;
+            var decoArg0 = deco.arguments[0].value;
             var decoArg1 = (((_b = deco.arguments) === null || _b === void 0 ? void 0 : _b.length) > 1 ? deco.arguments[1] : null);
+            var watchedExpr = transpiledText("this.".concat(decoArg0));
+            var handler = transpiledText(node);
+            var extraArg = "".concat(decoArg1 ? (', ' + code.getSource(decoArg1)) : '');
             emitComments(node);
-            emitLine("watch(() => ".concat(decoArg, ".value, ").concat(transpiledText(node)).concat(decoArg1 ? (', ' + code.getSource(decoArg1)) : '', ");"));
+            emitLine("watch(() => ".concat(watchedExpr, ", ").concat(handler).concat(extraArg, ");"));
             emitNewLine();
         }
     }

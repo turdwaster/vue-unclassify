@@ -273,6 +273,19 @@ describe('transpiler', () => {
         expect(res).not.toContain('this.');
     });
 
+    it(`transpiles prop references in computeds`, () => {
+        const src = makeClass(`
+            @Prop() public id: string;
+            @Watch('id')
+            public async onBAchange(newId: string) {}
+        `);
+
+        const res = transpile(src);
+        expect(res).toContain('props.id');
+        expect(res).not.toContain('id.value');
+        expect(res).not.toContain('this.');
+    });
+
     it(`handles vue-facing-decorator style`, () => {
         const src = `
         <script>
@@ -307,7 +320,8 @@ describe('transpiler', () => {
 
     it(`handles broken source ranges`, () => {
         const src = `export default class ParamList extends Vue { // Newline needed here to trigger
-            @Watch('deepStuff') private onDeepChange(val: string) {} }`;
+            @Watch('deepStuff') private onDeepChange(val: string) {}
+        	public deepStuff = { deep: { val: 123 } };}`;
         const res = transpile(src);
         expect(res).toContain('watch(() => deepStuff.value, (val: string) =>');
         expect(res).not.toContain('omponent');
