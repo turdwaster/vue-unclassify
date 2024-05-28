@@ -43,8 +43,6 @@ The resulting script is always reordered as
 
 [ ] Shadowing locals need renaming (i.e. `const ba = this.ba;`)
 
-[ ] Create `defineEmits` for `$emit` only present in `<template>`
-
 [ ] Propagate errors to stdout instead of dumping them in the script tag
 
 [ ] Transpile writable computeds (`set` methods)

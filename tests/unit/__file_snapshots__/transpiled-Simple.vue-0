@@ -25,6 +25,9 @@ const props = defineProps<{
 	filter: 'All' | 'UserDefined' | 'Basic' | 'Problematic';
 }>();
 
+// Emits
+const emit = defineEmits(['templateOnly']);
+
 // State
 const deepStuff = ref({ deep: { val: 123 } });
 const reactive = ref<ParamBag>(null);

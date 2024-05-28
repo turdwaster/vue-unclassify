@@ -4,11 +4,14 @@ import { applyRecursively, isDecorated, isDecoratedWith, parseTS } from './astTo
 
 const removeExports = ['vue-property-decorator', 'vue-class-component', 'vue-facing-decorator', ' Vue ', ' Vue, '];
 
-export function transpileTemplate(codeText: string) {
+export function transpileTemplate(codeText: string, context?: any) {
+    const emits = [...codeText.matchAll(/\$emit\s?\(['"]([a-zA-Z0-9]+)['"]/g)].map(x => x[1]);
+    if (context)
+        context.emits = [...new Set(emits)];
     return codeText.replace(/\$emit\s?\(/g, 'emit(');
 }
 
-export function transpile(codeText: string) {
+export function transpile(codeText: string, templateContext?: { emits?: string[] }) {
     // Fixup: interface before @Component -> syntax error
     codeText = codeText.replace(/@Component[\(\s$]/, ';$&');
 
@@ -119,7 +122,8 @@ export function transpile(codeText: string) {
     }
 
     // Emits - found by usage
-    const emits: { [id: string]: AnyNode } = {};
+    const emits: { [id: string]: AnyNode | null } = {};
+    templateContext?.emits?.forEach(x => emits[x] = null);
     applyRecursively(classNode.body, n => {
         if (n.type === 'CallExpression' && n.callee.type === 'MemberExpression') {
             const name = code.getSource(n.callee.property);
@@ -136,6 +140,7 @@ export function transpile(codeText: string) {
     if (emitNames.length) {
         emitSectionHeader('Emits');
         emitLine(`const emit = defineEmits(['${emitNames.join('\', \'')}']);`);
+        emitNewLine();
     }
 
     // Refs

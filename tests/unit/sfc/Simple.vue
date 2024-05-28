@@ -6,7 +6,8 @@
 				<template v-else>
 					<span class="thin align"> {{ notitles ? '' : item.title + ':' }} 	</span> 
 					<DutyPointValue :param="params.getParam(item.key)" :sizingId="sizingId || params.sizingId" :fullWidth="inline != null && inline !== false"
-						:mode="mode" :assumed="item.assumed" />			
+						:mode="mode" :assumed="item.assumed" />
+					<button @click="$emit('templateOnly')">Template-only emit</button>	
 				</template>
 			</li>
 		</ul>

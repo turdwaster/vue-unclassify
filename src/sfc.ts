@@ -42,12 +42,13 @@ export function joinSFC(sfc: SFCSections) {
 
 export function transpileSFC(source: string) {
     const sfc = splitSFC(source);
+    const templateContext = { emits: [] as string[] };
+    if (sfc.templateNode?.length)
+        sfc.templateNode = transpileTemplate(sfc.templateNode, templateContext);
     if (sfc.scriptBody?.length && !sfc.scriptNode?.includes('<script setup')) {
-        sfc.scriptBody = transpile(sfc.scriptBody);
+        sfc.scriptBody = transpile(sfc.scriptBody, templateContext);
         sfc.scriptNode = `<script setup lang="ts">${sfc.newLine}${sfc.scriptBody.trimEnd()}${sfc.newLine}</script>`;
     }
-    if (sfc.templateNode?.length)
-        sfc.templateNode = transpileTemplate(sfc.templateNode);
     return sfc;
 }
 

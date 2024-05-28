@@ -1,5 +1,5 @@
 import { transpile, transpileTemplate } from '@/transpiler';
-import { splitSFC } from '@/sfc';
+import { transpileSFC } from '@/sfc';
 import { toMatchFile } from 'jest-file-snapshot';
 import { readVueFile, vueFiles } from './testUtils';
 
@@ -19,9 +19,8 @@ function makeClass(body: string) {
 describe('transpiled', () => {
     vueFiles.forEach(name =>
         it(name, () => {
-            const { scriptBody } = splitSFC(readVueFile(name));
-            const code = transpile(scriptBody!);
-            expect(code).toMatchFile();
+            const { scriptBody } = transpileSFC(readVueFile(name));
+            expect(scriptBody).toMatchFile();
         })
     );
 });
