@@ -43,8 +43,6 @@ The resulting script is always reordered as
 
 [ ] Propagate errors to stdout instead of dumping them in the script tag
 
-[ ] Transpile writable computeds (`set` methods)
-
 [ ] Transpile `$router`
 
 [ ] Improve method body extraction for created() (.substring hack)

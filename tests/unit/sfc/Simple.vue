@@ -147,6 +147,9 @@ export default class ParamList extends Vue {
 		return map;
 	}
 
+	public get settable() { return 2; }
+	public set settable(value: number) { this.deepStuff.deep.val = value; }
+
 	private hasProblem(valueName: string) {
 		return this.params.hasProblem(valueName);
 	}

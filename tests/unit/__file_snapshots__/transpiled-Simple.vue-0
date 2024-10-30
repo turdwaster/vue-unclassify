@@ -45,6 +45,11 @@ const groupMap = computed(() => {
 	return map;
 });
 
+const settable = computed({
+	get: () => { return 2; },
+	set: (value: number) => { deepStuff.value.deep.val = value; }
+});
+
 // Watches
 watch(() => reloadTrigger.value, (val: string) => {
 	if (val)

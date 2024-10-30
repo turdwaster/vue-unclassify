@@ -174,7 +174,7 @@ export function transpile(codeText: string, templateContext?: { emits?: string[]
     const watchRegexp = new RegExp(`${thisDot}\\$watch\\s?\\(\\s?['"]([^'"]+)['"]`, 'g');
     const otherMemberRegexp = new RegExp(`${thisDot}`, 'g');
 
-    function transpiledText(node: MethodDefinition | PropertyDefinition | Expression | string) {
+    function transpiledText(node: MethodDefinition | PropertyDefinition | Expression | string, unIndent?: boolean) {
         let bodyText: string;
         if (typeof node == 'string')
             bodyText = node;
@@ -213,6 +213,8 @@ export function transpile(codeText: string, templateContext?: { emits?: string[]
         // this.[other member] -> [other member]
         bodyText = bodyText.replace(otherMemberRegexp, '$1');
 
+        if (unIndent === false)
+            return bodyText;
         return code.unIndent(bodyText);
     }
 
@@ -220,6 +222,11 @@ export function transpile(codeText: string, templateContext?: { emits?: string[]
 
     // Computeds
     const computeds = methods.filter(x => !isDecorated(x) && x.kind == 'get').map(code.deconstructProperty);
+    const computedSetters = new Map(
+        methods.filter(x => !isDecorated(x) && x.kind == 'set')
+        .map(code.deconstructProperty)
+        .map(x => [x.id, x.node]));
+
     if (computeds?.length) {
         // Gather definitions
         for (const { id, node } of computeds)
@@ -228,9 +235,20 @@ export function transpile(codeText: string, templateContext?: { emits?: string[]
         // Transpile references
         emitSectionHeader('Computeds');
         for (const { id, node } of computeds) {
-            emitComments(node);
-            emitLine(`const ${id} = computed(${transpiledText(node)});`);
-            emitNewLine();
+            const setter = computedSetters.get(id);
+            if (setter) {
+                emitComments(node);
+                emitLine(`const ${id} = computed({`);
+                emitComments(node);
+                emitLine(`\tget: ${transpiledText(node, false)},`);
+                emitLine(`\tset: ${transpiledText(setter, false)}`);
+                emitLine(`});`);
+                emitNewLine();
+            } else {
+                emitComments(node);
+                emitLine(`const ${id} = computed(${transpiledText(node)});`);
+                emitNewLine();
+            }
         }
     }
     

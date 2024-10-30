@@ -285,6 +285,30 @@ describe('transpiler', () => {
         expect(res).not.toContain('this.');
     });
 
+    it(`transpiles writable computeds`, () => {
+        const src = makeClass(`
+    public get settings(): Partial<ReportInputs> {
+        return {
+            UseImperial: this.reportSystemOfUnit === 'Imperial',
+            ShowCurves: true,
+            Language: this.language || undefined
+        };
+    }
+
+    public set settings(s: Partial<ReportInputs>) {
+        if (s) {
+            this.reportSystemOfUnit = s.UseImperial ? 'Imperial' : 'Metric';
+            this.showCurves = s.ShowCurves;
+            this.language = s.Language || fallbackLanguage;
+        }
+    }`);
+
+        const res = transpile(src);
+        expect(res).toContain('const settings = computed({');
+        expect(res).toContain('get: (): Partial<ReportInputs> => {');
+        expect(res).toContain('set: (s: Partial<ReportInputs>) => {');
+    });
+
     it(`detects member-shadowing locals`, () => {
         const src = `import Vue from 'vue';
         @Component
