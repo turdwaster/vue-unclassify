@@ -30,7 +30,7 @@
     "dev": "vite",
     "build-web": "vite build",
     "tsc-version": "tsc --version",
-    "build": "tsc --skipLibCheck --moduleResolution node --outDir bin src/transpiler.ts src/astTools.ts index.ts",
+    "build": "tsc --skipLibCheck --moduleResolution node --target es2015 --outDir bin src/transpiler.ts src/astTools.ts index.ts",
     "serve": "vite preview",
     "test": "vite-jest",
     "test:watch": "vite-jest --watch"
