@@ -70,8 +70,8 @@ onMounted(() => {
 function valueChange() {
 	if (!valid.value && props.rules != null)
 		return;
-	const value = value.value as string;
-	enteredValue.value = value;
+	const _value = value.value as string;
+	enteredValue.value = _value;
 	if (!readOnly.value)
 		props.param.setValue(enteredValue.value);
 }

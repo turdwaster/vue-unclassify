@@ -1,8 +1,13 @@
 import { AnyNode, CallExpression, ClassDeclaration, ExportDefaultDeclaration, ExportNamedDeclaration,
-    Expression, Literal, MethodDefinition, PropertyDefinition } from 'acorn';
+    Expression, Literal, MethodDefinition, PropertyDefinition, Node} from 'acorn';
 import { applyRecursively, isDecorated, isDecoratedWith, parseTS } from './astTools';
 
 const removeExports = ['vue-property-decorator', 'vue-class-component', 'vue-facing-decorator', ' Vue ', ' Vue, '];
+
+interface Issue {
+    message: string;
+    node: Node;
+}
 
 export function transpileTemplate(codeText: string, context?: any) {
     const emits = [...codeText.matchAll(/\$emit\s?\(['"]([a-zA-Z0-9]+)['"]/g)].map(x => x[1]);
@@ -17,7 +22,7 @@ export function transpile(codeText: string, templateContext?: { emits?: string[]
 
     const code = parseTS(codeText);
     let xformed = '';
-    const issues: { message: string, node: AnyNode }[] = [];
+    const issues: Issue[] = [];
 
     function emitSectionHeader(text: string | null) {
         emitLine(`// ${text}`);
@@ -181,6 +186,9 @@ export function transpile(codeText: string, templateContext?: { emits?: string[]
         // this.$watch(...) -> watch(...) (keep `this.` to apply observables etc below)
         bodyText = bodyText.replace(watchRegexp, '$1watch(() => this.$2');
 
+        if (typeof node !== 'string')
+            reportShadowedProps(node, issues);
+
         // this.[prop] -> props.[prop]
         for (const prop of Object.keys(propIdentifiers))
             bodyText = replaceThisExpr(bodyText, prop, 'props.');
@@ -299,9 +307,35 @@ export function transpile(codeText: string, templateContext?: { emits?: string[]
 
     if (issues?.length) {
         emitSectionHeader('Transpilation issues');
-        issues.forEach(x => emitLine(`// * ${x.message} (at ${x.node.loc?.start?.line}:${x.node.loc?.start?.column})`));
+        issues.forEach(x => emitLine(`// * ${x.message} (script section, row ${x.node.loc?.start?.line})`));
     }
 
     return xformed;
 }
 
+function reportShadowedProps(node: Expression | MethodDefinition | PropertyDefinition, issues: Issue[]) {
+    const thisUses: string[] = [];
+    const locals = new Map<string, Node>();
+
+    applyRecursively(node, x => {
+        if (x.type === 'MemberExpression' && x.object.type === 'ThisExpression') {
+            const member = x.property.type === 'Identifier' ? x.property.name : null;
+            if (member)
+                thisUses.push(member);
+        } else if (x.type === 'VariableDeclaration' && x.kind === 'const') {
+            for (const decl of x.declarations) {
+                if (decl.id.type === 'Identifier' && decl.init?.type !== 'CallExpression' && !locals.has(decl.id.name))
+                    locals.set(decl.id.name, decl);
+            }
+        }
+    });
+
+    const shadows = new Set(thisUses.filter(x => locals.has(x)));
+    for (const x of shadows) {
+        const node = locals.get(x);
+        issues.push({
+            message: `Local '${x}' shadows use of member with the same name. Rename to avoid compilation errors.`,
+            node: node!
+        });
+    }
+}

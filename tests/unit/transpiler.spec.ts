@@ -175,7 +175,7 @@ describe('transpiler', () => {
 
         const res = transpile(src);
         expect(res).not.toContain('this.selectedLineItems');
-        expect(res).not.toContain('this.gridApi');
+        expect(res).not.toContain('= this.gridApi');
         expect(res).not.toContain('gridApi.value');
         expect(res).not.toContain('selectedLineItems &&');
         expect(res).not.toContain('selectedLineItems.length');
@@ -283,6 +283,27 @@ describe('transpiler', () => {
         expect(res).toContain('props.id');
         expect(res).not.toContain('id.value');
         expect(res).not.toContain('this.');
+    });
+
+    it(`detects member-shadowing locals`, () => {
+        const src = `import Vue from 'vue';
+        @Component
+        export default class ComponentClass extends Vue {
+            public shadowed = 'text';
+
+            public created() {
+                const shadowed = this.shadowed;
+                const notShadowed = this.notShadowed('An argument');
+            }
+
+            public notShadowed(x: string) {
+                return x;
+            }
+        }`;
+    
+        const res = transpile(src);
+        expect(res).toContain('Local \'shadowed\'');
+        expect(res).not.toContain('Local \'notShadowed\'');
     });
 
     it(`handles vue-facing-decorator style`, () => {

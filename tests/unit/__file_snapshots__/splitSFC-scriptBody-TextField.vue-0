@@ -63,8 +63,8 @@
 		public valueChange() {
 			if (!this.valid && this.rules != null)
 				return;
-			const value = this.value as string;
-			this.enteredValue = value;
+			const _value = this.value as string;
+			this.enteredValue = _value;
 			if (!this.readOnly)
 				this.param.setValue(this.enteredValue);
 		}

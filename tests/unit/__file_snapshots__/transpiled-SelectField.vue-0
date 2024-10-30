@@ -208,3 +208,6 @@ function value(sel: SelectValue | string): any {
 	return sel;
 }
 
+// Transpilation issues
+// * Local 'values' shadows use of member with the same name. Rename to avoid compilation errors. (script section, row 116)
+// * Local 'values' shadows use of member with the same name. Rename to avoid compilation errors. (script section, row 153)

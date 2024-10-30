@@ -41,8 +41,6 @@ The resulting script is always reordered as
 ## TODOs
 [ ] Bug: Don't generate invalid uninitialized consts from static members; do `static` -> `let`, `static readonly` -> `const`
 
-[ ] Shadowing locals need renaming (i.e. `const ba = this.ba;`)
-
 [ ] Propagate errors to stdout instead of dumping them in the script tag
 
 [ ] Transpile writable computeds (`set` methods)
