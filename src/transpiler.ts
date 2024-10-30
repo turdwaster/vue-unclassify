@@ -322,7 +322,7 @@ function reportShadowedProps(node: Expression | MethodDefinition | PropertyDefin
             const member = x.property.type === 'Identifier' ? x.property.name : null;
             if (member)
                 thisUses.push(member);
-        } else if (x.type === 'VariableDeclaration' && x.kind === 'const') {
+        } else if (x.type === 'VariableDeclaration') {
             for (const decl of x.declarations) {
                 if (decl.id.type === 'Identifier' && decl.init?.type !== 'CallExpression' && !locals.has(decl.id.name))
                     locals.set(decl.id.name, decl);

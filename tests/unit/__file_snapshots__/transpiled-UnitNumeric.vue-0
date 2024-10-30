@@ -277,3 +277,5 @@ function pulseEvent(name: string) {
 	nextTick(() => (this as any)[name] = false);
 }
 
+// Transpilation issues
+// * Local 'value' shadows use of member with the same name. Rename to avoid compilation errors. (script section, row 239)
