@@ -330,6 +330,27 @@ describe('transpiler', () => {
         expect(res).not.toContain('Local \'notShadowed\'');
     });
 
+    it(`adds async when needed`, () => {
+        const src = makeClass(`
+		public async mounted() {
+			await this.buildManager.doSearchBearingAssemblies();
+		}
+
+		@Watch('selectedBearingAssembly')
+        public async onChange(b: BearingAssemblyResult) {
+            await someMethod();
+		}
+            
+        public async randomAsync() {
+            await someMethod();
+		}`);
+
+        const res = transpile(src);
+        expect(res).toContain('async (b: BearingAssemblyResult) =>');
+        expect(res).toContain('onMounted(async () => {');
+        expect(res).toContain('async function randomAsync()');
+    });
+
     it(`handles vue-facing-decorator style`, () => {
         const src = `
         <script>

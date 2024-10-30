@@ -15,6 +15,7 @@ export interface DeconstructedProperty {
     id: string;
     typeStr: any;
     node: MethodDefinition | PropertyDefinition;
+    async?: boolean;
 }
 
 export function parseTS(code: string): ParsedCode {
@@ -100,7 +101,7 @@ function getCommentsBefore(code: string, commentLines: { [line: number] : string
     return commentLines[line];
 }
 
-function deconstructProperty(code: string, node: PropertyDefinition | MethodDefinition) {
+function deconstructProperty(code: string, node: PropertyDefinition | MethodDefinition): DeconstructedProperty {
     const ta = (node as any)?.typeAnnotation?.typeAnnotation;
     const typeStr =
         ta?.types?.map((t: AnyNode) => asSource(code, t)).join(' | ') ??
@@ -109,7 +110,8 @@ function deconstructProperty(code: string, node: PropertyDefinition | MethodDefi
     return {
         id: identifier(code, node),
         typeStr,
-        node
+        node,
+        async: node.type === 'MethodDefinition' ? Boolean(node.value?.async) : undefined
     };
 }
 
@@ -117,7 +119,7 @@ function asLambda(code: string, node: MethodDefinition) {
     if (node.type === 'MethodDefinition' && node.value?.body) {
         const params = node.value.params?.map(p => asSource(code, p)).join(', ') ?? '';
         const retType  = asSource(code, (node.value as any).returnType) ?? '';
-        return '(' + params + ')' + retType + ' => ' + asSource(code, node.value.body);
+        return `${node.value.async ? 'async ' : ''}(${params})${retType} => ${asSource(code, node.value.body)}`;
     }
     throw new Error('Expecting a method definition');
 }

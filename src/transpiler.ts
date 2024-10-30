@@ -1,6 +1,6 @@
 import { AnyNode, CallExpression, ClassDeclaration, ExportDefaultDeclaration, ExportNamedDeclaration,
     Expression, Literal, MethodDefinition, PropertyDefinition, Node} from 'acorn';
-import { applyRecursively, isDecorated, isDecoratedWith, parseTS } from './astTools';
+import { applyRecursively, DeconstructedProperty, isDecorated, isDecoratedWith, parseTS } from './astTools';
 
 const removeExports = ['vue-property-decorator', 'vue-class-component', 'vue-facing-decorator', ' Vue ', ' Vue, '];
 
@@ -289,26 +289,26 @@ export function transpile(codeText: string, templateContext?: { emits?: string[]
         }
     }
 
+    function emitFunctions(functions: DeconstructedProperty[]) {
+        for (const f of functions) {
+            emitComments(f.node);
+            emitLine(`${f.async ? 'async ' : ''}function ${f.id}${transpiledText(f.node.value!)}`);
+            emitNewLine();
+        }
+    }
+
     // Regular functions
     const functions = plainMethods.filter(({ id, node }) => !node.static && !specialMethods.includes(id));
     if (functions?.length) {
         emitSectionHeader('Functions');
-        for (const { id, node } of functions) {
-            emitComments(node);
-            emitLine(`function ${id}${transpiledText(node.value!)}`);
-            emitNewLine();
-        }
+        emitFunctions(functions);
     }
 
     // Static functions
     const staticFunctions = plainMethods.filter(({ id, node }) => node.static && !specialMethods.includes(id));
     if (staticFunctions?.length) {
         emitSectionHeader('Static functions');
-        for (const { id, node } of staticFunctions) {
-            emitComments(node);
-            emitLine(`function ${id}${transpiledText(node.value!)}`);
-            emitNewLine();
-        }
+        emitFunctions(staticFunctions);
     }
 
     // Exports (skip export of Vue class from vue-facing-decorator)
