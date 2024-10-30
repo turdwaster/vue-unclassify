@@ -1,5 +1,5 @@
-import { transpile, transpileTemplate } from '@/transpiler';
-import { transpileSFC } from '@/sfc';
+import { transpile as rawTranspile, transpileTemplate } from '@/transpiler';
+import { splitSFC, transpileSFC } from '@/sfc';
 import { toMatchFile } from 'jest-file-snapshot';
 import { readVueFile, vueFiles } from './testUtils';
 
@@ -16,11 +16,36 @@ function makeClass(body: string) {
         }`;
 }
 
+function counts(s: string) {
+    const freqDict: { [char: string]: number } = {};
+    s.split('').forEach(char => (freqDict as any)[char] = ((freqDict as any)[char] || 0) + 1);
+    return freqDict;
+}
+
+// Checked version of transpile
+function transpile(s: string) {
+    const scriptBody = rawTranspile(s);    
+    const chars = counts(scriptBody!);
+    expect(chars['{']).toEqual(chars['}']);
+    expect(chars['[']).toEqual(chars[']']);
+    expect(chars['(']).toEqual(chars[')']);
+    return scriptBody;
+}
+
 describe('transpiled', () => {
     vueFiles.forEach(name =>
         it(name, () => {
             const { scriptBody } = transpileSFC(readVueFile(name));
             expect(scriptBody).toMatchFile();
+        })
+    );
+});
+
+describe('transpiled files are balanced', () => {
+    vueFiles.forEach(name =>
+        it(name, () => {
+            const { scriptBody } = splitSFC(readVueFile(name));
+            transpile(scriptBody!);
         })
     );
 });

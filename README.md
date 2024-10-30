@@ -50,8 +50,6 @@ The resulting script is always reordered as
 ### Lower priority TODOs
 [ ] `this.$refs.xyz.focus` -> `const xyz = ref(); ... xyz.value.focus();`
 
-[ ] `computed(..., () => { \n* return y.value; \n* });` -> `computed(..., () => y.value);`
-
 [ ] For readonly members (`public readonly CUT: LengthType = 'Custom';`) -> skip the `ref()`
 
 [ ] Handle multiple script/style sections (passthrough)
