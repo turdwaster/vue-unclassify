@@ -52,9 +52,7 @@ const unit = computed(() => {
 	return u[0].toUpperCase() + u.slice(1);
 });
 
-const readOnly = computed(() => {
-	return !props.param || props.param.definition?.ReadOnly || props.locked;
-});
+const readOnly = computed(() => !props.param || props.param.definition?.ReadOnly || props.locked);
 
 const msgs = computed(() => {
 	const internals = (internalErrors.value || []).map(e => ({
@@ -71,13 +69,9 @@ const messages = computed(() => {
 		return 'No options are available';
 });
 
-const commentField = computed((): string => {
-	return props.param?.valueName;
-});
+const commentField = computed((): string => props.param?.valueName);
 
-const backingValue = computed(() => {
-	return props.param?.getValue();
-});
+const backingValue = computed(() => props.param?.getValue());
 
 // Watches
 watch(() => props.items, (items: any) => {

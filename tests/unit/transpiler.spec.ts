@@ -131,8 +131,8 @@ describe('transpiler', () => {
             }    
         `);
         const res = transpile(src);
-        expect(res).toContain('showPrice = computed((): boolean | undefined => {');
-        expect(res).toContain('tooltip = computed((): string => {');
+        expect(res).toContain('showPrice = computed((): boolean | undefined => ');
+        expect(res).toContain('tooltip = computed((): string => ');
         expect(res).toContain('if (dirty.value)');
         expect(res).not.toContain('this');
     });

@@ -39,9 +39,7 @@ const unitValue = ref<UnitValue>(null);
 const value = ref<string | SelectValue | null>(null);
 
 // Computeds
-const usableUnits = computed(() => {
-	return unitValue.value?.usableUnits || [];
-});
+const usableUnits = computed(() => unitValue.value?.usableUnits || []);
 
 const description = computed(() => {
 	if (props.customDescription)
@@ -50,30 +48,18 @@ const description = computed(() => {
 	return pdef && (tryToTranslate(pdef.Name) || pdef.Description) || 'No title';
 });
 
-const prefix = computed(() => {
-	return isAssumed.value ? '≈ ' : '';
-});
+const prefix = computed(() => isAssumed.value ? '≈ ' : '');
 
-const unit = computed(() => {
-	return unitValue.value?.unitString;
-});
+const unit = computed(() => unitValue.value?.unitString);
 
-const readOnly = computed(() => {
-	return !props.param || (props.param.definition?.ReadOnly && !props.writable) ||
-		props.locked || (props.inline || props.inline === '') || false;
-});
+const readOnly = computed(() => !props.param || (props.param.definition?.ReadOnly && !props.writable) ||
+props.locked || (props.inline || props.inline === '') || false);
 
-const messages = computed(() => {
-	return (warnings.value || errors.value) && (warnings.value || []).concat(errors.value || []);
-});
+const messages = computed(() => (warnings.value || errors.value) && (warnings.value || []).concat(errors.value || []));
 
-const useImperial = computed(() => {
-	return props.param.useImperialUnits;
-});
+const useImperial = computed(() => props.param.useImperialUnits);
 
-const baseUnitValue = computed((): number => {
-	return unitValue.value?.baseUnitValue;
-});
+const baseUnitValue = computed((): number => unitValue.value?.baseUnitValue);
 
 const predefValues = computed((): SelectValue[] => {
 	const unit = currentUnit.value;
@@ -154,25 +140,15 @@ const infos = computed(() => {
 	return all?.length ? all : undefined;
 });
 
-const commentField = computed((): string => {
-	return props.param?.valueName;
-});
+const commentField = computed((): string => props.param?.valueName);
 
-const showMenu = computed(() => {
-	return !!(usableUnits.value.length > 0 || props.target && commentField.value || showToggleAssumed.value);
-});
+const showMenu = computed(() => !!(usableUnits.value.length > 0 || props.target && commentField.value || showToggleAssumed.value));
 
-const showToggleAssumed = computed(() => {
-	return !readOnly.value && props.param?.canBeAssumed && (isAssumed.value || baseUnitValue.value != null);
-});
+const showToggleAssumed = computed(() => !readOnly.value && props.param?.canBeAssumed && (isAssumed.value || baseUnitValue.value != null));
 
-const isAssumed = computed(() => {
-	return props.param?.isAssumed;
-});
+const isAssumed = computed(() => props.param?.isAssumed);
 
-const backingValue = computed(() => {
-	return props.param?.getValue();
-});
+const backingValue = computed(() => props.param?.getValue());
 
 // Watches
 watch(() => useImperial.value, (value: boolean) => {

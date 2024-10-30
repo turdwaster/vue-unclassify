@@ -115,11 +115,21 @@ function deconstructProperty(code: string, node: PropertyDefinition | MethodDefi
     };
 }
 
+const singleReturnFunc = /^\s*\{\s*return\s+([^;\{\}]+);?\s*\}/;
+
 function asLambda(code: string, node: MethodDefinition) {
     if (node.type === 'MethodDefinition' && node.value?.body) {
         const params = node.value.params?.map(p => asSource(code, p)).join(', ') ?? '';
         const retType  = asSource(code, (node.value as any).returnType) ?? '';
-        return `${node.value.async ? 'async ' : ''}(${params})${retType} => ${asSource(code, node.value.body)}`;
+        let body = asSource(code, node.value.body);
+
+        if (body?.length) {
+            const singleReturnBody = singleReturnFunc.exec(body);
+            if (singleReturnBody?.length === 2)
+                body = singleReturnBody[1];
+        }
+
+        return `${node.value.async ? 'async ' : ''}(${params})${retType} => ${body}`;
     }
     throw new Error('Expecting a method definition');
 }

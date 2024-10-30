@@ -23,13 +23,9 @@ const description = computed(() => {
 	return pdef && (tryToTranslate(pdef.Name) || pdef.Description) || 'No title';
 });
 
-const readOnly = computed(() => {
-	return !props.param || props.param.definition?.ReadOnly || props.locked || false;
-});
+const readOnly = computed(() => !props.param || props.param.definition?.ReadOnly || props.locked || false);
 
-const messages = computed(() => {
-	return (warnings.value || errors.value) && (warnings.value || []).concat(errors.value || []);
-});
+const messages = computed(() => (warnings.value || errors.value) && (warnings.value || []).concat(errors.value || []));
 
 const errorClass = computed(() => {
 	if ((errors.value || []).length > 0)
@@ -49,9 +45,7 @@ const warnings = computed(() => {
 	return e?.length && e.map(x => x.Message) || null;
 });
 
-const backingValue = computed(() => {
-	return props.param?.getValue();
-});
+const backingValue = computed(() => props.param?.getValue());
 
 // Initialization
 onMounted(() => {
