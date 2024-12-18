@@ -47,6 +47,32 @@ The resulting script is always reordered as
 
 [ ] Improve method body extraction for created() (.substring hack)
 
+Function shadowed by local
+
+		const text = text(initialValue);
+
+
+ReportCreation.vue
+
+  public curveSettings: Partial<ReportInputs> = null;
+  private bags: Record<string, ParamBag>;
+
+blev
+
+  const curveSettings = ref<Partial>(null);
+  let bags: Record;
+  
+beforeDestroy -> onBeforeUnmount
+
+// False positives för shadowing (skippa props):
+const allParams = computed(() => {
+	const filter = props.filter;
+});
+
+False positives i ProjectFilterPanel
+
+// * Failed to interpret $emit call (script section, row 154)
+
 ### Lower priority TODOs
 [ ] `this.$refs.xyz.focus` -> `const xyz = ref(); ... xyz.value.focus();`
 
